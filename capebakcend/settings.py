@@ -32,6 +32,8 @@ ALLOWED_HOSTS = []
 
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -73,6 +75,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'capebakcend.wsgi.application'
+ASGI_APPLICATION = "capebakcend.asgi.application"
 
 
 # Database
