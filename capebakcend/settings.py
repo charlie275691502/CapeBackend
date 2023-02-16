@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'playground',
     'mainpage',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -91,8 +92,11 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'capebackend',
+        'HOST': 'localhost',
+        'USER': 'root',
+        'PASSWORD': 'asd860221',
     }
 }
 
@@ -141,3 +145,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
+
+AUTH_USER_MODEL = 'core.User'
