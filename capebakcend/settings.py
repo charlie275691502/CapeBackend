@@ -75,7 +75,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'capebakcend.wsgi.application'
-ASGI_APPLICATION = "capebakcend.asgi.application"
+ASGI_APPLICATION = 'capebakcend.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 
 # Database

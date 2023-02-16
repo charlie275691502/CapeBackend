@@ -4,7 +4,7 @@ from django.shortcuts import render
 def hello(request):
     return render(request, 'hello.html')
 
-def index(request):
+def rooms(request):
     return render(request, 'index.html')
 
 def room(request, room_name):
