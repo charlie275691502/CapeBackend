@@ -42,8 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'debug_toolbar',
     'playground',
-    'mainpage',
     'core',
+    'mainpage',
+    'chat',
+    'GOAbasicgame',
 ]
 
 MIDDLEWARE = [
@@ -92,10 +94,10 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'capebackend',
         'HOST': 'localhost',
-        'USER': 'root',
+        'USER': 'postgres',
         'PASSWORD': 'asd860221',
     }
 }

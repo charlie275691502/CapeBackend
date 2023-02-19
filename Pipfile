@@ -8,7 +8,7 @@ django = "*"
 django-debug-toolbar = "*"
 channels = {extras = ["daphne"], version = "*"}
 channels-redis = "*"
-mysqlclient = "*"
+psycopg2 = "*"
 
 [dev-packages]
 
