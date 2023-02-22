@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
-from core.models import User
+from mainpage.models import Player
 
 class GOABasicGameAction(models.Model):
     player_id = models.IntegerField(null=True, blank=True)
@@ -11,7 +11,7 @@ class GOABasicGameProfile(models.Model):
     elo = models.IntegerField(null=True, blank=True)
     played_game_count = models.IntegerField(null=True, blank=True)
     win_game_count = models.IntegerField(null=True, blank=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='goa_basic_game_profile')
+    user = models.OneToOneField(Player, on_delete=models.CASCADE, related_name='goa_basic_game_profile')
 
 class GOABasicBoardStatus(models.Model):
     draw_pile_card_ids = ArrayField(models.IntegerField(null=True, blank=True), null=True, blank=True)
