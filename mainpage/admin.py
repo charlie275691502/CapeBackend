@@ -12,9 +12,11 @@ class PlayerAdmin(admin.ModelAdmin):
     list_editable = ['coin']
     list_select_related = ['user']
 
+    @admin.display(ordering='user__is_superuser')
     def user_is_superuser(self, player: models.Player):
         return player.user.is_superuser
 
+    @admin.display(ordering='user__is_staff')
     def user_is_staff(self, player: models.Player):
         return player.user.is_staff
 

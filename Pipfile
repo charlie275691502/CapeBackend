@@ -9,6 +9,9 @@ django-debug-toolbar = "*"
 channels = {extras = ["daphne"], version = "*"}
 channels-redis = "*"
 psycopg2 = "*"
+djoser = "*"
+djangorestframework-simplejwt = "*"
+djangorestframework = "*"
 
 [dev-packages]
 
