@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import Player
 
-class PlayerSerializers(serializers.ModelSerializer):
-    user_id = serializers.IntegerField()
+class PlayerSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Player
