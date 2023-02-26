@@ -12,6 +12,7 @@ psycopg2 = "*"
 djoser = "*"
 djangorestframework-simplejwt = "*"
 djangorestframework = "*"
+drf-nested-routers = "*"
 
 [dev-packages]
 

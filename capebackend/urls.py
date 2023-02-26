@@ -27,4 +27,5 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('playground/',include('playground.urls')),
     path('mainpage/',include('mainpage.urls')),
+    path('chat/',include('chat.urls')),
 ]

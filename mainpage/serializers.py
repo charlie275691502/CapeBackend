@@ -1,9 +1,10 @@
 from rest_framework import serializers
+from core.serializers import UserSerializer
 from .models import Player
 
 class PlayerSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(read_only=True)
+    user = UserSerializer()
 
     class Meta:
         model = Player
-        fields = ['nick_name', 'coin', 'user_id']
+        fields = ['nick_name', 'coin', 'user']
