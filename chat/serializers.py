@@ -1,9 +1,20 @@
 from rest_framework import serializers
 from mainpage.serializers import PlayerSerializer
 from .models import Room, Message
+from mainpage.models import Player
+
+class MessagePlayerSerializer(serializers.ModelSerializer):
+    id = serializers.SerializerMethodField(method_name='get_user_id')
+
+    class Meta:
+        model = Player
+        fields = ['id', 'nick_name']
+
+    def get_user_id(self, player: Player):
+        return player.user.id
 
 class MessageSerializer(serializers.ModelSerializer):
-    player_id = serializers.IntegerField(read_only=True)
+    player = MessagePlayerSerializer(read_only=True)
 
     def save(self, **kwargs):
         room_id = self.context['room_id']
@@ -12,7 +23,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'content', 'create_at', 'player_id']
+        fields = ['id', 'content', 'create_at', 'player']
 
 class RoomListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)

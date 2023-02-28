@@ -1,11 +1,13 @@
 from rest_framework import serializers
-from core.serializers import UserSerializer
 from .models import Player
 
 class PlayerSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    id = serializers.SerializerMethodField(method_name='get_user_id')
     coin = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Player
-        fields = ['nick_name', 'coin', 'user']
+        fields = ['id', 'nick_name', 'coin']
+
+    def get_user_id(self, player: Player):
+        return player.user.id
