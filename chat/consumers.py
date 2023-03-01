@@ -6,12 +6,12 @@ from .models import Message
 
 class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
-    def create_room(self, room_id, player_id, message):
-        Message.objects.create(room_id=1, player_id=3, content=message)
+    def create_message(self, room_id, player_id, message):
+        Message.objects.create(room_id=room_id, player_id=player_id, content=message)
 
     async def connect(self):
-        self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
-        self.room_group_name = "chat_%s" % self.room_id
+        room_id = self.scope["url_route"]["kwargs"]["room_id"]
+        self.room_group_name = "chat_%s" % room_id
 
         # Join room group
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
@@ -29,7 +29,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         player_id = self.scope["user"].id
         message = text_data_json["message"]
 
-        await self.create_room(room_id, player_id, message)
+        await self.create_message(room_id, player_id, message)
 
         # Send message to room group
         await self.channel_layer.group_send(
