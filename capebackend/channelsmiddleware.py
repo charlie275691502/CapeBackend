@@ -28,7 +28,7 @@ class JwtAuthMiddleware(BaseMiddleware):
         close_old_connections()
         token = ""
         for header in scope["headers"] :
-            if header[0] == "Authorization" :
+            if header[0] == b"authorization" :
                 token = header[1]
                 break
 
