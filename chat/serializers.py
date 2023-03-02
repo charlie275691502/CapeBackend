@@ -25,6 +25,13 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ['id', 'content', 'create_at', 'player']
 
+class RoomPlayerSerializer(serializers.ModelSerializer):
+    players = PlayerSerializer(read_only=True, many=True)
+    
+    class Meta:
+        model = Room
+        fields = ['id', 'players']
+
 class RoomListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     players = PlayerSerializer(read_only=True, many=True)
