@@ -14,7 +14,7 @@ class PlayerViewSet(CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, Gene
 
     @action(detail=False, methods=['GET', 'PUT'])
     def me(self, request: Request):
-        player, is_created = Player.objects.get_or_create(user_id=request.user.id)
+        player = Player.objects.get(user_id=request.user.id)
         if request.method == 'GET':
             serializer = PlayerSerializer(player)
             return Response(serializer.data)
