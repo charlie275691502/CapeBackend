@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from .models import Message, Room
-from .serializers import MessageSerializer, RoomPlayerSerializer
+from .serializers import MessageSerializer, RoomListSerializer
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -32,7 +32,7 @@ class ChatConsumer(WebsocketConsumer):
             data = self.create_message(room_id, player_id, content)
             
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "send_data", "command": "send_message", "data": data}
+                self.room_group_name, {"type": "send_data", "command": "append_message", "data": data}
             )
 
     def send_data(self, event):
@@ -70,25 +70,25 @@ class RoomManageConsumer(WebsocketConsumer):
             data = self.try_join_room(room_id, player_id)
             
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "send_data", "command": "update_room_players", "data": data}
+                self.room_group_name, {"type": "send_data", "command": "update_room", "data": data}
             )
         elif command == "leave_room" :
             data = self.try_join_room(room_id, player_id)
             
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "send_data", "command": "update_room_players", "data": data}
+                self.room_group_name, {"type": "send_data", "command": "update_room", "data": data}
             )
     
     def try_join_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
         # add player to room
-        serializer = RoomPlayerSerializer(room)
+        serializer = RoomListSerializer(room)
         return serializer.data
     
     def leave_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
         # remove player from room
-        serializer = RoomPlayerSerializer(room)
+        serializer = RoomListSerializer(room)
         return serializer.data
 
     def send_data(self, event):
