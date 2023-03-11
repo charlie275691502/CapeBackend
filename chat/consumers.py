@@ -51,7 +51,6 @@ class ChatConsumer(WebsocketConsumer):
             if isSuccess == False :
                 self.send(text_data=json.dumps({"command": "join_room_fail", "data": errorMessage}))
             else :
-                self.send(text_data=json.dumps({"command": "join_room_success", "data": None}))
                 async_to_sync(self.channel_layer.group_send)(
                     self.room_group_name, {
                         "type": "send_data",
@@ -59,6 +58,8 @@ class ChatConsumer(WebsocketConsumer):
                         "data": data
                     }
                 )
+                self.send(text_data=json.dumps({"command": "join_room_success", "data": None}))
+
         elif command == "leave_room" :
             room_id = text_data_json['room_id']
             isSuccess, data, errorMessage = self.try_leave_room(room_id, player_id)
@@ -66,7 +67,6 @@ class ChatConsumer(WebsocketConsumer):
             if isSuccess == False :
                 self.send(text_data=json.dumps({"command": "leave_room_fail", "data": errorMessage}))
             else :
-                self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
                 async_to_sync(self.channel_layer.group_send)(
                     self.room_group_name, {
                         "type": "send_data",
@@ -74,6 +74,8 @@ class ChatConsumer(WebsocketConsumer):
                         "data": data
                     }
                 )
+                self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
+
 
     def send_data(self, event):
         data = event["data"]
@@ -90,7 +92,6 @@ class ChatConsumer(WebsocketConsumer):
         players = room.players.all()
         player = players.filter(pk=player_id)
         if len(players) >= 4:
-            # send error message to the player
             return (False, None, "Room Full")
         elif player.exists() :
             return (False, None, "You are already in this room")
@@ -108,7 +109,11 @@ class ChatConsumer(WebsocketConsumer):
         if player.exists() :
             room.players.remove(player_id)
         else :
-            # send error message to the player
             return (False, None, "You are not in this room")
+        
+        if len(players) == 0 :
+            room.delete()
+            return (True, None, "")
+        
         serializer = RoomListSerializer(room)
         return (True, serializer.data, "")
