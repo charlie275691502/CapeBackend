@@ -2,6 +2,7 @@ import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from .models import Message, Room
+from mainpage.models import Player
 from .serializers import MessageSerializer, RoomListSerializer
 
 
@@ -17,6 +18,11 @@ class ChatConsumer(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, close_code):
+        player_id = self.scope["user"].id
+        rooms = Player.objects.filter(user_id=player_id).first().rooms.all()
+        for room in rooms :
+            self.try_leave_room(room.id, player_id)
+
         async_to_sync(self.channel_layer.group_discard)(
             self.room_group_name, self.channel_name
         )
@@ -32,21 +38,33 @@ class ChatConsumer(WebsocketConsumer):
             data = self.create_message(room_id, player_id, content)
             
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "send_data", "command": "append_message", "data": data}
+                self.room_group_name, {
+                    "type": "send_data",
+                    "command": "append_message",
+                    "data": data
+                }
             )
         elif command == "join_room" :
             room_id = text_data_json['room_id']
             data = self.try_join_room(room_id, player_id)
             
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "send_data", "command": "update_room", "data": data}
+                self.room_group_name, {
+                    "type": "send_data",
+                    "command": "update_room",
+                    "data": data
+                }
             )
         elif command == "leave_room" :
             room_id = text_data_json['room_id']
-            data = self.try_join_room(room_id, player_id)
+            data = self.try_leave_room(room_id, player_id)
             
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "send_data", "command": "update_room", "data": data}
+                self.room_group_name, {
+                    "type": "send_data",
+                    "command": "update_room",
+                    "data": data
+                }
             )
 
     def send_data(self, event):
@@ -61,12 +79,28 @@ class ChatConsumer(WebsocketConsumer):
     
     def try_join_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
-        # add player to room
+        players = room.players.all()
+        player = players.filter(pk=player_id)
+        if len(players) >= 4:
+            # send error message to the player
+            return None
+        elif player.exists() :
+            return None
+        else :
+            room.players.add(player_id)
+            room.save()
+
         serializer = RoomListSerializer(room)
         return serializer.data
     
-    def leave_room(self, room_id, player_id):
+    def try_leave_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
-        # remove player from room
+        players = room.players.all()
+        player = players.filter(pk=player_id)
+        if player.exists() :
+            room.players.remove(player_id)
+        else :
+            # send error message to the player
+            return None
         serializer = RoomListSerializer(room)
         return serializer.data
