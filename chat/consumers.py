@@ -46,26 +46,34 @@ class ChatConsumer(WebsocketConsumer):
             )
         elif command == "join_room" :
             room_id = text_data_json['room_id']
-            data = self.try_join_room(room_id, player_id)
-            
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {
-                    "type": "send_data",
-                    "command": "update_room",
-                    "data": data
-                }
-            )
+            isSuccess, data, errorMessage = self.try_join_room(room_id, player_id)
+
+            if isSuccess == False :
+                self.send(text_data=json.dumps({"command": "join_room_fail", "data": errorMessage}))
+            else :
+                self.send(text_data=json.dumps({"command": "join_room_success", "data": None}))
+                async_to_sync(self.channel_layer.group_send)(
+                    self.room_group_name, {
+                        "type": "send_data",
+                        "command": "update_room",
+                        "data": data
+                    }
+                )
         elif command == "leave_room" :
             room_id = text_data_json['room_id']
-            data = self.try_leave_room(room_id, player_id)
+            isSuccess, data, errorMessage = self.try_leave_room(room_id, player_id)
             
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {
-                    "type": "send_data",
-                    "command": "update_room",
-                    "data": data
-                }
-            )
+            if isSuccess == False :
+                self.send(text_data=json.dumps({"command": "leave_room_fail", "data": errorMessage}))
+            else :
+                self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
+                async_to_sync(self.channel_layer.group_send)(
+                    self.room_group_name, {
+                        "type": "send_data",
+                        "command": "update_room",
+                        "data": data
+                    }
+                )
 
     def send_data(self, event):
         data = event["data"]
@@ -83,15 +91,15 @@ class ChatConsumer(WebsocketConsumer):
         player = players.filter(pk=player_id)
         if len(players) >= 4:
             # send error message to the player
-            return None
+            return (False, None, "Room Full")
         elif player.exists() :
-            return None
+            return (False, None, "You are already in this room")
         else :
             room.players.add(player_id)
             room.save()
 
         serializer = RoomListSerializer(room)
-        return serializer.data
+        return (True, serializer.data, "")
     
     def try_leave_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
@@ -101,6 +109,6 @@ class ChatConsumer(WebsocketConsumer):
             room.players.remove(player_id)
         else :
             # send error message to the player
-            return None
+            return (False, None, "You are not in this room")
         serializer = RoomListSerializer(room)
-        return serializer.data
+        return (True, serializer.data, "")
