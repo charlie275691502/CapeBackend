@@ -67,13 +67,15 @@ class ChatConsumer(WebsocketConsumer):
             if isSuccess == False :
                 self.send(text_data=json.dumps({"command": "leave_room_fail", "data": errorMessage}))
             else :
-                async_to_sync(self.channel_layer.group_send)(
-                    self.room_group_name, {
-                        "type": "send_data",
-                        "command": "update_room",
-                        "data": data
-                    }
-                )
+                if data != None :
+                    async_to_sync(self.channel_layer.group_send)(
+                        self.room_group_name, {
+                            "type": "send_data",
+                            "command": "update_room",
+                            "data": data
+                        }
+                    )
+
                 self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
 
 
