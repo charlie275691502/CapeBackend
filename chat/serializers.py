@@ -31,7 +31,7 @@ class RoomListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'players']
+        fields = ['id', 'room_name', 'game_type', 'players']
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -41,4 +41,4 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'players', 'messages']
+        fields = ['id', 'room_name', 'game_type', 'players', 'messages']
