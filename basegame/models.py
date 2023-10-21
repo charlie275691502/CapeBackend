@@ -12,7 +12,7 @@ class BaseGameSetting(models.Model):
     ]
 
     game_type = models.CharField(max_length=3, choices=GAME_TYPE_CHOICES, default=GAME_TYPE_NONE)
-    player_limit = models.IntegerField(null=True, blank=True, default=1)
+    player_spot = models.IntegerField(null=True, blank=True, default=1)
 
     def default():
         default = BaseGameSetting()
