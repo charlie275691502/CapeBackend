@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'core',
     'mainpage',
     'chat',
-    'GOAbasicgame',
+    'basegame',
 ]
 
 MIDDLEWARE = [

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from mainpage.serializers import PlayerSerializer
 from .models import Room, Message
 from mainpage.models import Player
+from basegame.serializers import BaseGameSettingSerializer
 
 class MessagePlayerSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField(method_name='get_user_id')
@@ -27,18 +28,20 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class RoomListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    game_setting = BaseGameSettingSerializer(read_only=True)
     players = PlayerSerializer(read_only=True, many=True)
 
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'game_type', 'players']
+        fields = ['id', 'room_name', 'game_setting', 'players']
 
 
 class RoomSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    game_setting = BaseGameSettingSerializer(read_only=True)
     players = PlayerSerializer(read_only=True, many=True)
     messages = MessageSerializer(read_only=True, many=True)
 
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'game_type', 'players', 'messages']
+        fields = ['id', 'room_name', 'game_setting', 'players', 'messages']
