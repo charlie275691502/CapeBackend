@@ -29,7 +29,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class RoomListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    game_setting = BaseGameSettingSerializer()
+    game_setting = BaseGameSettingSerializer(read_only=True)
     players = PlayerSerializer(read_only=True, many=True)
 
     class Meta:
@@ -43,9 +43,9 @@ class RoomSerializer(serializers.ModelSerializer):
     players = PlayerSerializer(read_only=True, many=True)
     messages = MessageSerializer(read_only=True, many=True)
 
-    def save(self, **kwargs):
-        game_setting = BaseGameSetting.objects.create(**self.validated_data['game_setting'])
-        Room.objects.create(room_name=self.validated_data['room_name'], game_setting=game_setting)
+    def create(self, validated_data):
+        game_setting = BaseGameSetting.objects.create(**validated_data['game_setting'])
+        return Room.objects.create(room_name=validated_data['room_name'], game_setting=game_setting)
 
     class Meta:
         model = Room
