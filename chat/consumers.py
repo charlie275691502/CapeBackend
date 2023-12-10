@@ -1,33 +1,39 @@
 import json
-from channels.generic.websocket import WebsocketConsumer
-from asgiref.sync import async_to_sync
+from channels.generic.websocket import AsyncWebsocketConsumer
+from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async
 from .models import Message, Room
 from mainpage.models import Player
 from .serializers import MessageSerializer, RoomListSerializer
 
 
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
+class ChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
         room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.room_group_name = "chat_%s" % room_id
+        
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name)
 
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name, self.channel_name
-        )
+        await self.accept()
+        print("connect finish")
 
-        self.accept()
-
-    def disconnect(self, close_code):
+    async def disconnect(self, close_code):
+        room_id = self.scope["url_route"]["kwargs"]["room_id"]
         player_id = self.scope["user"].id
-        rooms = Player.objects.filter(user_id=player_id).first().rooms.all()
-        for room in rooms :
-            self.try_leave_room(room.id, player_id)
+        print(f"{room_id} room_id")
+        await database_sync_to_async(self.try_leave_room)(
+            room_id,
+            player_id)
 
-        async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name, self.channel_name
-        )
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name)
 
-    def receive(self, text_data):
+        print("disconnect finish")
+
+    async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         player_id = self.scope["user"].id
         command = text_data_json["command"]
@@ -35,54 +41,61 @@ class ChatConsumer(WebsocketConsumer):
         if command == "send_message" :
             room_id = self.scope["url_route"]["kwargs"]['room_id']
             content = text_data_json["content"]
-            data = self.create_message(room_id, player_id, content)
+            data = await database_sync_to_async(self.create_message) (
+                room_id,
+                player_id,
+                content)
             
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
                     "type": "send_data",
                     "command": "append_message",
                     "data": data
-                }
-            )
+                })
+            
         elif command == "join_room" :
             room_id = text_data_json['room_id']
-            isSuccess, data, errorMessage = self.try_join_room(room_id, player_id)
+            isSuccess, data, errorMessage = await database_sync_to_async(self.try_join_room)(
+                room_id,
+                player_id)
 
             if isSuccess == False :
-                self.send(text_data=json.dumps({"command": "join_room_fail", "data": errorMessage}))
+                await self.send(text_data=json.dumps({"command": "join_room_fail", "data": errorMessage}))
             else :
-                async_to_sync(self.channel_layer.group_send)(
-                    self.room_group_name, {
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
                         "type": "send_data",
                         "command": "update_room",
                         "data": data
-                    }
-                )
-                self.send(text_data=json.dumps({"command": "join_room_success", "data": None}))
+                    })
+                await self.send(text_data=json.dumps({"command": "join_room_success", "data": None}))
 
         elif command == "leave_room" :
             room_id = text_data_json['room_id']
-            isSuccess, data, errorMessage = self.try_leave_room(room_id, player_id)
+            isSuccess, data, errorMessage = await database_sync_to_async(self.try_leave_room)(
+                room_id,
+                player_id)
             
             if isSuccess == False :
-                self.send(text_data=json.dumps({"command": "leave_room_fail", "data": errorMessage}))
+                await self.send(text_data=json.dumps({"command": "leave_room_fail", "data": errorMessage}))
             else :
                 if data != None :
-                    async_to_sync(self.channel_layer.group_send)(
-                        self.room_group_name, {
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
                             "type": "send_data",
                             "command": "update_room",
                             "data": data
-                        }
-                    )
-
-                self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
+                        })
+                await self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
 
 
-    def send_data(self, event):
+    async def send_data(self, event):
         data = event["data"]
         command = event["command"]
-        self.send(text_data=json.dumps({"command": command, "data": data}))
+        await self.send(text_data=json.dumps({"command": command, "data": data}))
 
     def create_message(self, room_id, player_id, content):
         message = Message.objects.create(room_id=room_id, player_id=player_id, content=content)
