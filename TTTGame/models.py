@@ -22,12 +22,22 @@ class TTTPlayer(models.Model):
     win_game_count = models.IntegerField(default=0)
     player_set = models.ForeignKey(TTTPlayerSet, on_delete=models.CASCADE, related_name='players')
 
+class TTTActionCommand(models.Model):
+    pass
+
+class TTTChoosePositionActionCommand(TTTActionCommand):
+    pass
+
+class TTTResignActionCommand(TTTActionCommand):
+    pass
+
 class TTTActionSet(models.Model):
     pass
 
 class TTTAction(models.Model):
     action_set = models.ForeignKey(TTTActionSet, on_delete=models.CASCADE, related_name='actions')
-
+    player = models.ForeignKey(TTTPlayer, null=True, blank=True, on_delete=models.SET_NULL)
+    action_command = models.OneToOneField(TTTActionCommand, null=True, blank=True, on_delete=models.SET_NULL)
 
 class TTTRecord(models.Model):
     init_board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
