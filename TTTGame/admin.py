@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TTTBoard, TTTSetting, TTTPlayerSet, TTTPlayer, TTTActionSet, TTTAction, TTTRecord, TTTGame
+from .models import TTTBoard, TTTSetting, TTTPlayerSet, TTTPlayer, TTTActionSet, TTTAction, TTTRecord, TTTGame, TTTActionCommand, TTTChoosePositionActionCommand, TTTResignActionCommand
 
 # Register your models here.
 
@@ -16,23 +16,40 @@ class TTTPlayerInline(admin.TabularInline):
 
 @admin.register(TTTPlayerSet)
 class TTTPlayerSetAdmin(admin.ModelAdmin):
-    inlines = [
-        TTTPlayerInline,
-    ]
+    inlines = [TTTPlayerInline]
 
 @admin.register(TTTPlayer)
 class TTTPlayerAdmin(admin.ModelAdmin):
-    list_display = ['team', 'elo', 'played_game_count', 'win_game_count']
+    list_display = ['team', 'user', 'elo', 'played_game_count', 'win_game_count']
 
-# @admin.register(TTTActionSet)
-# class TTTActionSetAdmin(admin.ModelAdmin):
+class TTTActionInline(admin.TabularInline):
+    model = TTTAction
 
-# @admin.register(TTTAction)
-# class TTTActionAdmin(admin.ModelAdmin):
+@admin.register(TTTActionSet)
+class TTTActionSetAdmin(admin.ModelAdmin):
+    inlines = [TTTActionInline]
 
-# @admin.register(TTTRecord)
-# class TTTRecordAdmin(admin.ModelAdmin):
+@admin.register(TTTActionCommand)
+class TTTActionCommandAdmin(admin.ModelAdmin):
+    pass
 
-# @admin.register(TTTGame)
-# class TTTGameAdmin(admin.ModelAdmin):
+@admin.register(TTTChoosePositionActionCommand)
+class TTTChoosePositionActionCommandAdmin(admin.ModelAdmin):
+    list_display = ['position']
+
+@admin.register(TTTResignActionCommand)
+class TTTResignActionCommandAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(TTTAction)
+class TTTActionAdmin(admin.ModelAdmin):
+    list_display = ['player', 'action_command']
+
+@admin.register(TTTRecord)
+class TTTRecordAdmin(admin.ModelAdmin):
+    list_display = ['init_board', 'action_set', 'player_set', 'setting']
+
+@admin.register(TTTGame)
+class TTTGameAdmin(admin.ModelAdmin):
+    list_display = ['board', 'player_set', 'setting']
     
