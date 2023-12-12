@@ -26,6 +26,7 @@ class TTTActionCommand(models.Model):
     pass
 
 class TTTChoosePositionActionCommand(TTTActionCommand):
+    position = models.IntegerField(default=0)
     pass
 
 class TTTResignActionCommand(TTTActionCommand):
@@ -47,6 +48,5 @@ class TTTRecord(models.Model):
 
 class TTTGame(models.Model):
     board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
-    action_set = models.OneToOneField(TTTActionSet, on_delete=models.PROTECT)
     player_set = models.OneToOneField(TTTPlayerSet, on_delete=models.PROTECT)
     setting = models.OneToOneField(TTTSetting, on_delete=models.PROTECT)
