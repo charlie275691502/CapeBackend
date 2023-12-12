@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'mainpage',
     'chat',
     'basegame',
+    'TTTGame',
 ]
 
 MIDDLEWARE = [
