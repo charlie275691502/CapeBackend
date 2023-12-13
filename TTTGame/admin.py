@@ -43,7 +43,7 @@ class TTTResignActionCommandAdmin(admin.ModelAdmin):
 
 @admin.register(TTTAction)
 class TTTActionAdmin(admin.ModelAdmin):
-    list_display = ['player', 'action_command']
+    list_display = ['player', 'content_type', 'object_id']
 
 @admin.register(TTTRecord)
 class TTTRecordAdmin(admin.ModelAdmin):

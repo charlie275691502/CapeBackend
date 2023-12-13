@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from mainpage.models import Player
-
 
 class TTTBoard(models.Model):
     positions = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
@@ -16,14 +17,15 @@ class TTTPlayerSet(models.Model):
 
 class TTTPlayer(models.Model):
     team = models.IntegerField(default=0)
-    user = models.OneToOneField(Player, null=True, blank=True, on_delete=models.SET_NULL)
+    player = models.OneToOneField(Player, null=True, blank=True, on_delete=models.SET_NULL)
     elo = models.IntegerField(default=0)
     played_game_count = models.IntegerField(default=0)
     win_game_count = models.IntegerField(default=0)
     player_set = models.ForeignKey(TTTPlayerSet, on_delete=models.CASCADE, related_name='players')
 
 class TTTActionCommand(models.Model):
-    pass
+    class Meta:
+        abstract = True
 
 class TTTChoosePositionActionCommand(TTTActionCommand):
     position = models.IntegerField(default=0)
@@ -38,7 +40,10 @@ class TTTActionSet(models.Model):
 class TTTAction(models.Model):
     action_set = models.ForeignKey(TTTActionSet, on_delete=models.CASCADE, related_name='actions')
     player = models.ForeignKey(TTTPlayer, null=True, blank=True, on_delete=models.SET_NULL)
-    action_command = models.OneToOneField(TTTActionCommand, null=True, blank=True, on_delete=models.SET_NULL)
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    action_command = GenericForeignKey('content_type', 'object_id')
 
 class TTTRecord(models.Model):
     init_board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
