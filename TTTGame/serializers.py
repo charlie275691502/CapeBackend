@@ -41,3 +41,13 @@ class TTTResignActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = TTTResignActionCommand
         fields = []
+
+class TTTRecordAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TTTRecordAdmin
+        fields = ['init_board', 'action_set', 'player_set', 'setting']
+
+class TTTGameAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TTTGameAdmin
+        fields = ['board', 'player_set', 'setting']
