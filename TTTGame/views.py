@@ -1,6 +1,4 @@
-from django.shortcuts import render
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
+from rest_framework.viewsets import ModelViewSet
 from .serializers import TTTRecordSerializer, TTTGameSerializer
 
 class TTTRecordViewSet(ModelViewSet):

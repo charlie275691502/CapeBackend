@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PlayerViewSet
+from .views import TTTRecordViewSet, TTTGameViewSet
 
 router = DefaultRouter()
 router.register('record', TTTRecordViewSet, basename = 'record')
