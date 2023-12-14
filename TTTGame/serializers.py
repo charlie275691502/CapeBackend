@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TTTBoard
+from .models import TTTBoard, TTTSetting, TTTPlayer, TTTAction, TTTActionCommand, TTTChoosePositionActionCommand, TTTResignActionCommand, TTTRecord, TTTGame
 from mainpage.serializers import PlayerSerializer
 
 class TTTBoardSerializer(serializers.ModelSerializer):
@@ -42,12 +42,12 @@ class TTTResignActionCommandSerializer(serializers.ModelSerializer):
         model = TTTResignActionCommand
         fields = []
 
-class TTTRecordAdminSerializer(serializers.ModelSerializer):
+class TTTRecordSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TTTRecordAdmin
+        model = TTTRecord
         fields = ['init_board', 'action_set', 'player_set', 'setting']
 
-class TTTGameAdminSerializer(serializers.ModelSerializer):
+class TTTGameSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TTTGameAdmin
+        model = TTTGame
         fields = ['board', 'player_set', 'setting']
