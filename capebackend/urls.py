@@ -28,4 +28,5 @@ urlpatterns = [
     path('playground/',include('playground.urls')),
     path('mainpage/',include('mainpage.urls')),
     path('chat/',include('chat.urls')),
+    path('TTTGame/',include('TTTGame.urls')),
 ]
