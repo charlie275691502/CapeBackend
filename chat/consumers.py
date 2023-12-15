@@ -17,12 +17,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name)
 
         await self.accept()
-        print("connect finish")
 
     async def disconnect(self, close_code):
         room_id = self.scope["url_route"]["kwargs"]["room_id"]
         player_id = self.scope["user"].id
-        print(f"{room_id} room_id")
         await database_sync_to_async(self.try_leave_room)(
             room_id,
             player_id)
@@ -31,15 +29,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name)
 
-        print("disconnect finish")
-
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         player_id = self.scope["user"].id
         command = text_data_json["command"]
+        room_id = self.scope["url_route"]["kwargs"]['room_id']
 
         if command == "send_message" :
-            room_id = self.scope["url_route"]["kwargs"]['room_id']
             content = text_data_json["content"]
             data = await database_sync_to_async(self.create_message) (
                 room_id,
@@ -53,9 +49,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "command": "append_message",
                     "data": data
                 })
+
+        elif command == "start_game" :
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "send_data",
+                    "command": "start_game",
+                    "data": ""
+                })
             
         elif command == "join_room" :
-            room_id = text_data_json['room_id']
             isSuccess, data, errorMessage = await database_sync_to_async(self.try_join_room)(
                 room_id,
                 player_id)
@@ -70,10 +74,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "command": "update_room",
                         "data": data
                     })
-                await self.send(text_data=json.dumps({"command": "join_room_success", "data": None}))
+                await self.send(text_data=json.dumps({"command": "join_room_success", "data": ""}))
 
         elif command == "leave_room" :
-            room_id = text_data_json['room_id']
             isSuccess, data, errorMessage = await database_sync_to_async(self.try_leave_room)(
                 room_id,
                 player_id)
@@ -89,12 +92,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             "command": "update_room",
                             "data": data
                         })
-                await self.send(text_data=json.dumps({"command": "leave_room_success", "data": None}))
-
+                await self.send(text_data=json.dumps({"command": "leave_room_success", "data": ""}))
 
     async def send_data(self, event):
-        data = event["data"]
         command = event["command"]
+        data = event["data"]
         await self.send(text_data=json.dumps({"command": command, "data": data}))
 
     def create_message(self, room_id, player_id, content):
