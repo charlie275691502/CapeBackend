@@ -11,13 +11,14 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "capebackend.settings")
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
-import chat.routing
+import chat.routing, TTTGame.routing
+websocket_urlpatterns = chat.routing.websocket_urlpatterns + TTTGame.routing.websocket_urlpatterns
 
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": AllowedHostsOriginValidator(
-            JwtAuthMiddlewareStack(URLRouter(chat.routing.websocket_urlpatterns))
+            JwtAuthMiddlewareStack(URLRouter(websocket_urlpatterns))
         ),
     }
 )
