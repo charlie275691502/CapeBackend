@@ -30,6 +30,12 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         player_id = self.scope["user"].id
         game_id = self.scope["url_route"]["kwargs"]['game_id']
         command = text_data_json["command"]
+    
+    async def send_command_success(self, command):
+        await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
+
+    async def send_command_fail(self, command, errorMessage):
+        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": errorMessage}))
 
     async def send_data(self, event):
         command = event["command"]
