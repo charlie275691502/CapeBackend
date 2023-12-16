@@ -77,6 +77,13 @@ class TTTRecordSerializer(serializers.ModelSerializer):
         return TTTPlayerSerializer(record.player_set.players.all(), many = True).data
 
 class TTTGameSerializer(serializers.ModelSerializer):
+    board = TTTBoardSerializer(read_only=True)
+    players = serializers.SerializerMethodField(method_name='get_players')
+    setting = TTTSettingSerializer(read_only=True)
+    
     class Meta:
         model = TTTGame
-        fields = ['board', 'player_set', 'setting']
+        fields = ['board', 'players', 'setting']
+
+    def get_players(self, game: TTTGame):
+        return TTTPlayerSerializer(game.player_set.players.all(), many = True).data
