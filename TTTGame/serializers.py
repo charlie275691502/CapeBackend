@@ -19,14 +19,6 @@ class TTTPlayerSerializer(serializers.ModelSerializer):
         model = TTTPlayer
         fields = ['team', 'player', 'elo', 'played_game_count', 'win_game_count']
 
-class TTTActionSerializer(serializers.ModelSerializer):
-    player = PlayerSerializer(read_only=True)
-    action_command = TTTActionCommandSerializer(read_only=True)
-
-    class Meta:
-        model = TTTAction
-        fields = ['player', 'action_command']
-
 class TTTActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = TTTActionCommand
@@ -41,6 +33,14 @@ class TTTResignActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = TTTResignActionCommand
         fields = []
+
+class TTTActionSerializer(serializers.ModelSerializer):
+    player = PlayerSerializer(read_only=True)
+    action_command = TTTActionCommandSerializer(read_only=True)
+
+    class Meta:
+        model = TTTAction
+        fields = ['player', 'action_command']
 
 class TTTRecordSerializer(serializers.ModelSerializer):
     class Meta:

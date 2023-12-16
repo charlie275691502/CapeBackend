@@ -3,11 +3,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 
-from .models import Message, Room
-from mainpage.models import Player
-from .serializers import MessageSerializer, RoomListSerializer
-
-
 class TTTGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         game_id = self.scope["url_route"]["kwargs"]["game_id"]

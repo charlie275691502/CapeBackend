@@ -20,7 +20,7 @@ class TTTPlayerSetAdmin(admin.ModelAdmin):
 
 @admin.register(TTTPlayer)
 class TTTPlayerAdmin(admin.ModelAdmin):
-    list_display = ['team', 'user', 'elo', 'played_game_count', 'win_game_count']
+    list_display = ['team', 'player', 'elo', 'played_game_count', 'win_game_count']
 
 class TTTActionInline(admin.TabularInline):
     model = TTTAction
@@ -28,10 +28,6 @@ class TTTActionInline(admin.TabularInline):
 @admin.register(TTTActionSet)
 class TTTActionSetAdmin(admin.ModelAdmin):
     inlines = [TTTActionInline]
-
-@admin.register(TTTActionCommand)
-class TTTActionCommandAdmin(admin.ModelAdmin):
-    pass
 
 @admin.register(TTTChoosePositionActionCommand)
 class TTTChoosePositionActionCommandAdmin(admin.ModelAdmin):
