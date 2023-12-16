@@ -58,6 +58,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "command": "start_game",
                     "data": ""
                 })
+            await self.send_command_success(command)
             
         elif command == "join_room" :
             isSuccess, data, errorMessage = await database_sync_to_async(self.try_join_room)(
@@ -65,7 +66,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 player_id)
 
             if isSuccess == False :
-                await self.send(text_data=json.dumps({"command": "join_room_fail", "data": errorMessage}))
+                await self.send_command_fail(command, errorMessage)
             else :
                 await self.channel_layer.group_send(
                     self.room_group_name,
@@ -74,7 +75,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "command": "update_room",
                         "data": data
                     })
-                await self.send(text_data=json.dumps({"command": "join_room_success", "data": ""}))
+                await self.send_command_success(command)
 
         elif command == "leave_room" :
             isSuccess, data, errorMessage = await database_sync_to_async(self.try_leave_room)(
@@ -82,7 +83,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 player_id)
             
             if isSuccess == False :
-                await self.send(text_data=json.dumps({"command": "leave_room_fail", "data": errorMessage}))
+                await self.send_command_fail(command, errorMessage)
             else :
                 if data != None :
                     await self.channel_layer.group_send(
@@ -92,7 +93,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             "command": "update_room",
                             "data": data
                         })
-                await self.send(text_data=json.dumps({"command": "leave_room_success", "data": ""}))
+                await self.send_command_success(command)
+    
+    async def send_command_success(self, command):
+        await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
+
+    async def send_command_fail(self, command, errorMessage):
+        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": errorMessage}))
 
     async def send_data(self, event):
         command = event["command"]
