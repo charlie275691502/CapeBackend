@@ -24,14 +24,6 @@ class TTTActionCommandSerializer(serializers.ModelSerializer):
         model = TTTActionCommand
         fields = []
 
-class TTTActionSerializer(serializers.ModelSerializer):
-    player = PlayerSerializer(read_only=True)
-    action_command = TTTActionCommandSerializer(read_only=True)
-
-    class Meta:
-        model = TTTAction
-        fields = ['player', 'action_command']
-
 class TTTChoosePositionActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = TTTChoosePositionActionCommand
@@ -41,6 +33,14 @@ class TTTResignActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = TTTResignActionCommand
         fields = []
+
+class TTTActionSerializer(serializers.ModelSerializer):
+    player = PlayerSerializer(read_only=True)
+    action_command = TTTActionCommandSerializer(read_only=True)
+
+    class Meta:
+        model = TTTAction
+        fields = ['player', 'action_command']
 
 class TTTRecordSerializer(serializers.ModelSerializer):
     class Meta:
