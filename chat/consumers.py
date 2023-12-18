@@ -4,7 +4,8 @@ from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from .models import Message, Room
 from mainpage.models import Player
-from .serializers import MessageSerializer, RoomListSerializer
+from TTTGame.models import TTTPlayerSet, TTTPlayer, TTTBoard, TTTGame, TTTSetting
+from .serializers import MessageSerializer, RoomListSerializer, TTTGameSerializer
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -51,12 +52,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 })
 
         elif command == "start_game" :
+            data = await database_sync_to_async(self.create_game) (
+                room_id)
+
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     "type": "send_data",
                     "command": "start_game",
-                    "data": ""
+                    "data": data
                 })
             await self.send_command_success(command)
             
@@ -141,3 +145,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
         serializer = RoomListSerializer(room)
         return (True, serializer.data, "")
+
+    def create_game(self, room_id):
+        board = TTTBoard.objects.create(positions=[0, 0, 0, 0, 0, 0, 0, 0, 0])
+        player_set = TTTPlayerSet.objects.create()
+        setting = TTTSetting.objects.create(board_size=3)
+
+        room = Room.objects.filter(id=room_id).first()
+        players = room.players.all()
+        team_index = 1
+        for player in players :
+            ttt_player = TTTPlayer.objects.create(team=team_index, player_id=player.user.id, player_set_id=player_set.id)
+            team_index += 1
+
+        TTTGame.objects.create(board=board.id, player_set_id=player_set.id, setting_id=setting.id)
+        serializer = TTTGameSerializer(message)
+        return serializer.data
