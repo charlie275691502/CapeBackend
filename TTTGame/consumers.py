@@ -2,14 +2,13 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
-from .models import TTTAction, TTTChoosePositionActionCommand
-from .serializer import TTTActionSerialier
+from .models import TTTGame, TTTAction, TTTChoosePositionActionCommand
+from .serializers import TTTActionSerializer
 
 class TTTGameConsumer(AsyncWebsocketConsumer):
     def __init__(self):
         game_id = self.scope["url_route"]["kwargs"]["game_id"]
-        self.game = await database_sync_to_async(self.get_board) (
-                game_id)
+        self.game = self.get_board(game_id)
 
     async def connect(self):
         game_id = self.scope["url_route"]["kwargs"]["game_id"]
@@ -29,27 +28,24 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         player_id = self.scope["user"].id
-        game_id = self.scope["url_route"]["kwargs"]['game_id']
         command = text_data_json["command"]
 
-        if is_player_turn(player_id) == False:
+        if self.is_player_turn(player_id) == False:
             await self.send_command_fail(command, "Not your turn yet.")
             return
 
         if command == "choose_position_action" :
             position = text_data_json["position"]
 
-            if is_position_valid(position) == False:
+            if self.is_position_valid(position) == False:
                 await self.send_command_fail(command, "Position invalid")
                 return
 
             data = await database_sync_to_async(self.create_choose_position_action) (
-                game_id,
                 player_id,
                 position)
 
             await database_sync_to_async(self.execute_choose_position_action) (
-                game_id,
                 player_id,
                 position)
 
@@ -81,12 +77,9 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         return self.game.board.turn_of_team == player.team
 
     def is_position_valid(self, position):
-        return 
-            0 <= position and
-            position < self.game.setting.board_size ** 2 and
-            self.game.board.positions[position] == 0
+        return 0 <= position and position < self.game.setting.board_size ** 2 and self.game.board.positions[position] == 0
 
-    def create_choose_position_action(self, game_id, player_id, position):
+    def create_choose_position_action(self, player_id, position):
         player = self.game.player_set.players.filter(id=player_id).first()
 
         action_command = TTTChoosePositionActionCommand.objects.create(position=position)
@@ -95,10 +88,10 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
             player_id=player.player.user.id,
             action_command=action_command)
 
-        serializer = TTTActionSerialier(action)
+        serializer = TTTActionSerializer(action)
         return serializer.data
 
-    def execute_choose_position_action(self, game_id, player_id, position):
+    def execute_choose_position_action(self, player_id, position):
         player = self.game.player_set.players.filter(id=player_id).first()
         team = player.team
         self.game.board.position[position] = team

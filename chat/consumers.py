@@ -5,7 +5,8 @@ from channels.db import database_sync_to_async
 from .models import Message, Room
 from mainpage.models import Player
 from TTTGame.models import TTTPlayerSet, TTTPlayer, TTTBoard, TTTGame, TTTSetting
-from .serializers import MessageSerializer, RoomListSerializer, TTTGameSerializer
+from .serializers import MessageSerializer, RoomListSerializer
+from TTTGame.serializers import TTTGameSerializer
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -155,9 +156,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         players = room.players.all()
         team_index = 1
         for player in players :
-            ttt_player = TTTPlayer.objects.create(team=team_index, player_id=player.user.id, player_set_id=player_set.id)
+            TTTPlayer.objects.create(team=team_index, player_id=player.user.id, player_set_id=player_set.id)
             team_index += 1
 
-        TTTGame.objects.create(board=board.id, player_set_id=player_set.id, setting_id=setting.id)
-        serializer = TTTGameSerializer(message)
+        game = TTTGame.objects.create(board=board.id, player_set_id=player_set.id, setting_id=setting.id)
+        serializer = TTTGameSerializer(game)
         return serializer.data
