@@ -17,7 +17,7 @@ class TTTPlayerSet(models.Model):
 
 class TTTPlayer(models.Model):
     team = models.IntegerField(default=0)
-    player = models.OneToOneField(Player, null=True, blank=True, on_delete=models.SET_NULL)
+    player = models.ForeignKey(Player, null=True, blank=True, on_delete=models.SET_NULL)
     elo = models.IntegerField(default=0)
     played_game_count = models.IntegerField(default=0)
     win_game_count = models.IntegerField(default=0)

@@ -159,6 +159,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             TTTPlayer.objects.create(team=team_index, player_id=player.user.id, player_set_id=player_set.id)
             team_index += 1
 
-        game = TTTGame.objects.create(board=board.id, player_set_id=player_set.id, setting_id=setting.id)
+        game = TTTGame.objects.create(board_id=board.id, player_set_id=player_set.id, setting_id=setting.id)
         serializer = TTTGameSerializer(game)
         return serializer.data
