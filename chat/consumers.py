@@ -23,13 +23,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         room_id = self.scope["url_route"]["kwargs"]["room_id"]
         player_id = self.scope["user"].id
-        await database_sync_to_async(self.try_leave_room)(
-            room_id,
-            player_id)
 
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name)
+
+        data = await database_sync_to_async(self.leave_room)(
+            room_id,
+            player_id)
+        
+        if data != None :
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "send_data",
+                    "command": "update_room",
+                    "data": data
+                })
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -81,24 +91,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "data": data
                     })
                 await self.send_command_success(command)
-
-        elif command == "leave_room" :
-            isSuccess, data, errorMessage = await database_sync_to_async(self.try_leave_room)(
-                room_id,
-                player_id)
-            
-            if isSuccess == False :
-                await self.send_command_fail(command, errorMessage)
-            else :
-                if data != None :
-                    await self.channel_layer.group_send(
-                        self.room_group_name,
-                        {
-                            "type": "send_data",
-                            "command": "update_room",
-                            "data": data
-                        })
-                await self.send_command_success(command)
     
     async def send_command_success(self, command):
         await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
@@ -118,34 +110,40 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     def try_join_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
-        players = room.players.all()
-        player = players.filter(pk=player_id)
-        if len(players) >= 4:
+        if room == None :
+            return None
+
+        player = room.players.filter(pk=player_id).first()
+        if len(room.players) >= room.game_setting.player_plot:
             return (False, None, "Room Full")
-        elif player.exists() :
+
+        if player != None :
             return (False, None, "You are already in this room")
-        else :
-            room.players.add(player_id)
-            room.save()
+        
+        room.players.add(player_id)
+        room.save()
 
         serializer = RoomListSerializer(room)
         return (True, serializer.data, "")
     
-    def try_leave_room(self, room_id, player_id):
+    def leave_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
-        players = room.players.all()
-        player = players.filter(pk=player_id)
-        if player.exists() :
-            room.players.remove(player_id)
-        else :
-            return (False, None, "You are not in this room")
+        if room == None :
+            return None
+
+        player = room.players.filter(pk=player_id).first()
+        if player == None :
+            return None
+
+        room.players.remove(player_id)
+        room.save()
         
-        if len(players) == 0 :
+        if len(room.players) == 0 :
             room.delete()
-            return (True, None, "")
+            return None
         
         serializer = RoomListSerializer(room)
-        return (True, serializer.data, "")
+        return serializer.data
 
     def create_game(self, room_id):
         board = TTTBoard.objects.create(positions=[0, 0, 0, 0, 0, 0, 0, 0, 0])
