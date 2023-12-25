@@ -88,7 +88,8 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         return self.game.board.turn_of_team == player.team
 
     def is_position_valid(self, position):
-        return 0 <= position and position < self.game.setting.board_size ** 2 and self.game.board.positions[position] == 0
+        positions = self.game.board.positions
+        return 0 <= position and position < self.game.setting.board_size ** 2 and positions[position] == 0
 
     def is_game_over(self):
         board_size = self.game.setting.board_size
@@ -96,7 +97,8 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         row_team_count = [[0 for index in board_size] for team in range(2)]
         diagonal_team_count = [[0, 0] for team in range(2)]
         row_count = []
-        for index, position in enumerate(self.game.board.positions)
+        positions = self.game.board.positions
+        for index, position in enumerate(positions)
             column_index = index % board_size
             row_index = index / board_size
             if position == 0 :

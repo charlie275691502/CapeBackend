@@ -113,10 +113,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if room == None :
             return None
 
-        player = room.players.filter(pk=player_id).first()
-        if len(room.players) >= room.game_setting.player_plot:
+        players = room.players.all()
+        if len(players) >= room.game_setting.player_plot:
             return (False, None, "Room Full")
 
+        player = players.first()
         if player != None :
             return (False, None, "You are already in this room")
         
@@ -138,7 +139,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room.players.remove(player_id)
         room.save()
         
-        if len(room.players) == 0 :
+        players = room.players.all()
+        if len(players) == 0 :
             room.delete()
             return None
         
