@@ -91,7 +91,7 @@ DATABASES = {
         'NAME': 'capebackend',
         'HOST': 'localhost',
         'USER': 'postgres',
-        'PASSWORD': 'asd860221',
+        'PASSWORD': '6805',
     }
 }
 

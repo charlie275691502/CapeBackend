@@ -98,7 +98,7 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         diagonal_team_count = [[0, 0] for team in range(2)]
         row_count = []
         positions = self.game.board.positions
-        for index, position in enumerate(positions)
+        for index, position in enumerate(positions) :
             column_index = index % board_size
             row_index = index / board_size
             if position == 0 :
