@@ -6,12 +6,9 @@ from .models import TTTGame, TTTAction, TTTChoosePositionActionCommand
 from .serializers import TTTActionSerializer, TTTGameSerializer
 
 class TTTGameConsumer(AsyncWebsocketConsumer):
-    def __init__(self):
-        game_id = self.scope["url_route"]["kwargs"]["game_id"]
-        self.game = self.get_board(game_id)
-
     async def connect(self):
         game_id = self.scope["url_route"]["kwargs"]["game_id"]
+        self.game = await database_sync_to_async(self.get_board)(game_id)
         self.game_group_name = "game_%s" % game_id
         
         await self.channel_layer.group_add(
