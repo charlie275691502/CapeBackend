@@ -135,14 +135,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         player = room.players.filter(pk=player_id).first()
         if player == None :
             return None
+        
+        players = room.players.all()
+        if len(players) == 1 :
+            room.delete()
+            return None
 
         room.players.remove(player_id)
         room.save()
-        
-        players = room.players.all()
-        if len(players) == 0 :
-            room.delete()
-            return None
         
         serializer = RoomListSerializer(room)
         return serializer.data
