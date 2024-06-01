@@ -2,13 +2,15 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
-from .models import TTTGame, TTTAction, TTTChoosePositionActionCommand
+from .models import TTTGame, TTTAction, TTTChoosePositionActionCommand, TTTRecord
 from .serializers import TTTActionSerializer, TTTGameSerializer
 
 class TTTGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         game_id = self.scope["url_route"]["kwargs"]["game_id"]
-        self.game = await database_sync_to_async(self.get_board)(game_id)
+        
+        self.game = await database_sync_to_async(self.get_game)(game_id)
+        self.record = await database_sync_to_async(self.get_record)(game_id)
         self.game_group_name = "game_%s" % game_id
         
         await self.channel_layer.group_add(
@@ -26,15 +28,17 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         text_data_json = json.loads(text_data)
         player_id = self.scope["user"].id
         command = text_data_json["command"]
+        print(player_id)
 
-        if self.is_player_turn(player_id) == False:
+        if await database_sync_to_async(self.is_player_turn)(player_id) == False:
             await self.send_command_fail(command, "Not your turn yet.")
             return
 
         if command == "choose_position_action" :
             position = text_data_json["position"]
+            print(position)
 
-            if self.is_position_valid(position) == False:
+            if await database_sync_to_async(self.is_position_valid)(position) == False:
                 await self.send_command_fail(command, "Position invalid")
                 return
 
@@ -47,7 +51,7 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
                 position)
 
             await self.channel_layer.group_send(
-                self.room_group_name,
+                self.game_group_name,
                 {
                     "type": "send_data",
                     "command": "choose_position_action",
@@ -58,7 +62,7 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
             if self.is_game_over() :
                 data = self.get_game_serializer()
                 await self.channel_layer.group_send(
-                    self.room_group_name,
+                    self.game_group_name,
                     {
                         "type": "send_data",
                         "command": "game_over",
@@ -77,11 +81,14 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         data = event["data"]
         await self.send(text_data=json.dumps({"command": command, "data": data}))
 
-    def get_board(self, game_id):
+    def get_game(self, game_id):
         return TTTGame.objects.filter(id=game_id).first()
+    
+    def get_record(self, game_id):
+        return TTTRecord.objects.filter(game_id=game_id).first()
 
     def is_player_turn(self, player_id):
-        player = self.game.player_set.players.filter(id=player_id).first()
+        player = self.game.player_set.players.filter(player_id=player_id).first()
         return self.game.board.turn_of_team == player.team
 
     def is_position_valid(self, position):
@@ -90,14 +97,13 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
 
     def is_game_over(self):
         board_size = self.game.setting.board_size
-        column_team_count = [[0 for index in board_size] for team in range(2)]
-        row_team_count = [[0 for index in board_size] for team in range(2)]
+        column_team_count = [[0 for index in range(board_size)] for team in range(2)]
+        row_team_count = [[0 for index in range(board_size)] for team in range(2)]
         diagonal_team_count = [[0, 0] for team in range(2)]
-        row_count = []
         positions = self.game.board.positions
         for index, position in enumerate(positions) :
             column_index = index % board_size
-            row_index = index / board_size
+            row_index = index // board_size
             if position == 0 :
                 continue
             team_index = position - 1
@@ -111,11 +117,11 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
                any([any([count == board_size for count in diagonal_count]) for diagonal_count in diagonal_team_count])
 
     def create_choose_position_action(self, player_id, position):
-        player = self.game.player_set.players.filter(id=player_id).first()
+        player = self.game.player_set.players.filter(player_id=player_id).first()
 
         action_command = TTTChoosePositionActionCommand.objects.create(position=position)
         action = TTTAction.objects.create(
-            action_set_id=self.game.player_set.action_set.id,
+            action_set_id=self.record.action_set.id,
             player_id=player.player.user.id,
             action_command=action_command)
 
@@ -123,7 +129,7 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         return serializer.data
 
     def execute_choose_position_action(self, player_id, position):
-        player = self.game.player_set.players.filter(id=player_id).first()
+        player = self.game.player_set.players.filter(player_id=player_id).first()
         team = player.team
         self.game.board.positions[position] = team
         self.game.board.turn += 1 

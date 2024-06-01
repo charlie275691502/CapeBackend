@@ -4,7 +4,7 @@ from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from .models import Message, Room
 from mainpage.models import Player
-from TTTGame.models import TTTPlayerSet, TTTPlayer, TTTBoard, TTTGame, TTTSetting
+from TTTGame.models import TTTActionSet, TTTPlayerSet, TTTPlayer, TTTBoard, TTTGame, TTTRecord, TTTSetting
 from .serializers import MessageSerializer, RoomListSerializer
 from TTTGame.serializers import TTTGameSerializer
 
@@ -149,6 +149,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     def create_game(self, room_id):
         board = TTTBoard.objects.create(positions=[0, 0, 0, 0, 0, 0, 0, 0, 0])
+        init_board = TTTBoard.objects.create(positions=[0, 0, 0, 0, 0, 0, 0, 0, 0])
+        action_set = TTTActionSet.objects.create()
         player_set = TTTPlayerSet.objects.create()
         setting = TTTSetting.objects.create(board_size=3)
 
@@ -160,5 +162,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             team_index += 1
 
         game = TTTGame.objects.create(board_id=board.id, player_set_id=player_set.id, setting_id=setting.id)
+        TTTRecord.objects.create(init_board_id=init_board.id, action_set_id=action_set.id, game_id=game.id)
         serializer = TTTGameSerializer(game)
         return serializer.data

@@ -83,7 +83,7 @@ class TTTGameSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = TTTGame
-        fields = ['board', 'players', 'setting']
+        fields = ['id', 'board', 'players', 'setting']
 
     def get_players(self, game: TTTGame):
         return TTTPlayerSerializer(game.player_set.players.all(), many = True).data

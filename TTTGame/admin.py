@@ -43,7 +43,7 @@ class TTTActionAdmin(admin.ModelAdmin):
 
 @admin.register(TTTRecord)
 class TTTRecordAdmin(admin.ModelAdmin):
-    list_display = ['init_board', 'action_set', 'player_set', 'setting']
+    list_display = ['init_board', 'action_set', 'game']
 
 @admin.register(TTTGame)
 class TTTGameAdmin(admin.ModelAdmin):

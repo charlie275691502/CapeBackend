@@ -45,13 +45,12 @@ class TTTAction(models.Model):
     object_id = models.PositiveIntegerField()
     action_command = GenericForeignKey('content_type', 'object_id')
 
-class TTTRecord(models.Model):
-    init_board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
-    action_set = models.OneToOneField(TTTActionSet, on_delete=models.PROTECT)
-    player_set = models.OneToOneField(TTTPlayerSet, on_delete=models.PROTECT)
-    setting = models.OneToOneField(TTTSetting, on_delete=models.PROTECT)
-
 class TTTGame(models.Model):
     board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
     player_set = models.OneToOneField(TTTPlayerSet, on_delete=models.PROTECT)
     setting = models.OneToOneField(TTTSetting, on_delete=models.PROTECT)
+
+class TTTRecord(models.Model):
+    init_board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
+    action_set = models.OneToOneField(TTTActionSet, on_delete=models.PROTECT)
+    game = models.OneToOneField(TTTGame, on_delete=models.PROTECT)
