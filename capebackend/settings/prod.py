@@ -16,3 +16,12 @@ DATABASES = {
 
 STATIC_HOST = os.environ.get("STATIC_HOST", "")
 STATIC_URL = STATIC_HOST + "/static/"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("0.0.0.0", 6379)],
+        },
+    },
+}
