@@ -25,3 +25,7 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+INTERNAL_IPS = [
+    '0.0.0.0',
+]
