@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TTTBoard, TTTSetting, TTTPlayer, TTTAction, TTTActionCommand, TTTChoosePositionActionCommand, TTTResignActionCommand, TTTRecord, TTTGame
+from .models import TTTBoard, TTTSetting, TTTPlayer, TTTAction, TTTActionCommand, TTTChoosePositionActionCommand, TTTResignActionCommand, TTTRecord, TTTGame, TTTSummary
 from mainpage.serializers import PlayerSerializer
 
 class TTTBoardSerializer(serializers.ModelSerializer):
@@ -60,15 +60,23 @@ class TTTActionSerializer(serializers.ModelSerializer):
             return TTTResignActionCommandSerializer(action.action_command).data
         return TTTActionCommandSerializer(action.action_command).data
 
+class TTTSummarySerializer(serializers.ModelSerializer):
+    winner = TTTPlayerSerializer(read_only=True)
+    
+    class Meta:
+        model = TTTSummary
+        fields = ['winner', 'turns']
+    
 class TTTRecordSerializer(serializers.ModelSerializer):
     init_board = TTTBoardSerializer(read_only=True)
     actions = serializers.SerializerMethodField(method_name='get_actions')
     players = serializers.SerializerMethodField(method_name='get_players')
     setting = TTTSettingSerializer(read_only=True)
+    summary = TTTSummarySerializer(read_only=True)
 
     class Meta:
         model = TTTRecord
-        fields = ['init_board', 'actions', 'players', 'setting']
+        fields = ['init_board', 'actions', 'players', 'setting', 'summary']
 
     def get_actions(self, record: TTTRecord):
         return TTTActionSerializer(record.action_set.actions.all(), many = True).data

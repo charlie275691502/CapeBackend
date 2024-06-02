@@ -50,7 +50,13 @@ class TTTGame(models.Model):
     player_set = models.OneToOneField(TTTPlayerSet, on_delete=models.PROTECT)
     setting = models.OneToOneField(TTTSetting, on_delete=models.PROTECT)
 
+class TTTSummary(models.Model):
+    winner = models.ForeignKey(TTTPlayer, null=True, blank=True, on_delete=models.SET_NULL)
+    turns = models.IntegerField(default=1)
+    
 class TTTRecord(models.Model):
     init_board = models.OneToOneField(TTTBoard, on_delete=models.PROTECT)
     action_set = models.OneToOneField(TTTActionSet, on_delete=models.PROTECT)
     game = models.OneToOneField(TTTGame, on_delete=models.PROTECT)
+    summary = models.OneToOneField(TTTSummary, null=True, blank=True, on_delete=models.PROTECT)
+    

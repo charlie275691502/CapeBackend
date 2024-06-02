@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TTTBoard, TTTSetting, TTTPlayerSet, TTTPlayer, TTTActionSet, TTTAction, TTTRecord, TTTGame, TTTActionCommand, TTTChoosePositionActionCommand, TTTResignActionCommand
+from .models import TTTBoard, TTTSetting, TTTPlayerSet, TTTPlayer, TTTActionSet, TTTAction, TTTRecord, TTTGame, TTTActionCommand, TTTChoosePositionActionCommand, TTTResignActionCommand, TTTSummary
 
 # Register your models here.
 
@@ -41,9 +41,13 @@ class TTTResignActionCommandAdmin(admin.ModelAdmin):
 class TTTActionAdmin(admin.ModelAdmin):
     list_display = ['player', 'content_type', 'object_id']
 
+@admin.register(TTTSummary)
+class TTTRecordAdmin(admin.ModelAdmin):
+    list_display = ['winner', 'turns']
+    
 @admin.register(TTTRecord)
 class TTTRecordAdmin(admin.ModelAdmin):
-    list_display = ['init_board', 'action_set', 'game']
+    list_display = ['init_board', 'action_set', 'game', 'summary']
 
 @admin.register(TTTGame)
 class TTTGameAdmin(admin.ModelAdmin):

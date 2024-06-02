@@ -2,14 +2,15 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
-from .models import TTTGame, TTTAction, TTTChoosePositionActionCommand, TTTRecord
-from .serializers import TTTActionSerializer, TTTGameSerializer
+from .models import TTTGame, TTTAction, TTTChoosePositionActionCommand, TTTRecord, TTTSummary
+from .serializers import TTTActionSerializer, TTTGameSerializer, TTTSummarySerializer
 
 class TTTGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         game_id = self.scope["url_route"]["kwargs"]["game_id"]
         
-        self.record = await database_sync_to_async(self.get_record)(game_id)
+        record = await database_sync_to_async(self.get_record)(game_id)
+        self.record_action_set_id = record.action_set.id
         self.game_id = game_id
         self.game_group_name = "game_%s" % game_id
         
@@ -57,12 +58,14 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
                 })
             await self.send_command_success(command)
 
-            if self.is_game_over(game) :
+            is_game_over, is_team_1_win = self.is_game_over(game)
+            if is_game_over :
+                data = await database_sync_to_async(self.execute_game_over)(game, is_team_1_win)
                 await self.channel_layer.group_send(
                     self.game_group_name,
                     {
                         "type": "send_data",
-                        "command": "game_over",
+                        "command": "summary",
                         "data": data
                     })
 
@@ -82,10 +85,9 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         return TTTGame.objects.filter(id=game_id).first()
     
     def get_record(self, game_id):
-        return TTTRecord.objects.filter(game_id=game_id).first()
+        return TTTRecord.objects.prefetch_related("action_set").filter(game_id=game_id).first()
     
-    def get_player(self, player_id):
-        game = TTTGame.objects.filter(id=self.game_id).first()
+    def get_player(self, game, player_id):
         return game.player_set.players.filter(player_id=player_id).first()
 
     def is_player_turn(self, game, player_id):
@@ -113,15 +115,23 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
             diagonal_team_count[team_index][0] += 1 if row_index == column_index else 0
             diagonal_team_count[team_index][1] += 1 if row_index + column_index + 1 == board_size else 0
         
-        return any([any([count == board_size for count in column_count]) for column_count in column_team_count]) or\
-               any([any([count == board_size for count in row_count]) for row_count in row_team_count]) or\
-               any([any([count == board_size for count in diagonal_count]) for diagonal_count in diagonal_team_count])
+        is_team_1_win = \
+            any([count == board_size for count in column_team_count[0]]) or\
+            any([count == board_size for count in row_team_count[0]]) or\
+            any([count == board_size for count in diagonal_team_count[0]])
+            
+        is_team_2_win = \
+            any([count == board_size for count in column_team_count[1]]) or\
+            any([count == board_size for count in row_team_count[1]]) or\
+            any([count == board_size for count in diagonal_team_count[1]])
+            
+        return (is_team_1_win or is_team_2_win, is_team_1_win)
 
     def execute_choose_position_action(self, game, player_id, position):
-        player = self.get_player(player_id)
+        player = self.get_player(game, player_id)
         action_command = TTTChoosePositionActionCommand.objects.create(position=position)
         TTTAction.objects.create(
-            action_set_id=self.record.action_set.id,
+            action_set_id=self.record_action_set_id,
             player_id=player.player.user.id,
             action_command=action_command)
         
@@ -130,6 +140,19 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         game.board.turn += 1 
         game.board.turn_of_team = 3 - team
         game.board.save()
+        
+    def execute_game_over(self, game, is_team_1_win):
+        record = self.get_record(self.game_id)
+        summary = TTTSummary.objects.create(winner= \
+                                                    game.player_set.players.filter(team=1).first() \
+                                                if is_team_1_win else \
+                                                    game.player_set.players.filter(team=1).first() \
+                                                , turns=game.board.turn)
+        record.summary = summary
+        record.save()
+        
+        serializer = TTTSummarySerializer(summary)
+        return serializer.data
 
     def get_game_serializer(self, game):
         serializer = TTTGameSerializer(game)
