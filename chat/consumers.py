@@ -111,13 +111,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def try_join_room(self, room_id, player_id):
         room = Room.objects.filter(id=room_id).first()
         if room == None :
-            return None
+            return (False, None, "Room Not Exists")
 
         players = room.players.all()
         if len(players) >= room.game_setting.player_plot:
             return (False, None, "Room Full")
 
-        player = players.first()
+        player = room.players.filter(user_id=player_id).first()
         if player != None :
             return (False, None, "You are already in this room")
         
