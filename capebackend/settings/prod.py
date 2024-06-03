@@ -10,18 +10,20 @@ SECRET_KEY = env('SECRET_KEY')
 
 DEBUG = True
 
+ALLOWED_HOSTS = [env("ALLOWED_HOST")]
+
 DATABASES = {
     'default': dj_database_url.parse(env('DATABASE_URL'))
 }
 
-STATIC_HOST = os.environ.get("STATIC_HOST", "")
+STATIC_HOST = env("STATIC_HOST")
 STATIC_URL = STATIC_HOST + "/static/"
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("0.0.0.0", 6379)],
+            "hosts": [(env("REDIS_HOST"), env("REDIS_POST"))],
         },
     },
 }
