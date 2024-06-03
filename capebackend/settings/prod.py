@@ -24,7 +24,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [{
-                "address": env("REDIS_EXTERNAL_IP"),
+                "address": "rediss://red-cpehbov109ks73evmahg:XoNuBFBVhTiDH4zaGAEwSx52UEcloF7w@singapore-redis.render.com:6379",
                 "ssl_cert_reqs": None,
                        }],
         },
