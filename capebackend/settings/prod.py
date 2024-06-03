@@ -31,3 +31,6 @@ CHANNEL_LAYERS = {
 INTERNAL_IPS = [
     '0.0.0.0',
 ]
+
+CSRF_TRUSTED_ORIGINS = ['https://*.' + env("ALLOWED_HOST"), 'https://*.0.0.0.0']
+CSRF_COOKIE_SECURE = False
