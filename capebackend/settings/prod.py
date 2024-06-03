@@ -23,7 +23,10 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(env("REDIS_HOST"), env("REDIS_POST"))],
+            "hosts": [{
+                "address": env("REDIS_EXTERNAL_IP"),
+                "ssl_cert_reqs": None,
+                       }],
         },
     },
 }
