@@ -1,6 +1,6 @@
 import os
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "capebackend.settings.dev")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "capebackend.settings.prod")
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
 
