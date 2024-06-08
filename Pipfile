@@ -17,6 +17,7 @@ dj-database-url = "*"
 django-environ = "*"
 gunicorn = "*"
 whitenoise = "*"
+daphne = "*"
 
 [dev-packages]
 

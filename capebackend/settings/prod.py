@@ -8,11 +8,35 @@ environ.Env.read_env()
 
 SECRET_KEY = env('SECRET_KEY')
 
-DEBUG = False
+DEBUG = True
+
+ALLOWED_HOSTS = [env("ALLOWED_HOST")]
 
 DATABASES = {
-    'default': dj_database_url.parse(env('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'capebackend',
+        'HOST': 'localhost',
+        'USER': 'postgres',
+        'PASSWORD': env('DATABASE_PASSWORD'),
+    }
 }
 
-STATIC_HOST = os.environ.get("STATIC_HOST", "")
+STATIC_HOST = env("STATIC_HOST")
 STATIC_URL = STATIC_HOST + "/static/"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
+CSRF_TRUSTED_ORIGINS = ['https://*.' + env("ALLOWED_HOST"), 'https://*.127.0.0.1']
+CSRF_COOKIE_SECURE = False
