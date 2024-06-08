@@ -67,6 +67,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         elif command == "start_game" :
             # data = await database_sync_to_async(self.create_ttt_game) (
             #     room_id)
+            #
+            # await self.channel_layer.group_send(
+            #     self.room_group_name,
+            #     {
+            #         "type": "send_data",
+            #         "command": "start_ttt_game",
+            #         "data": data
+            #     })
+            # await self.send_command_success(command)
             
             data = await database_sync_to_async(self.create_goa_game) (
                 room_id)
@@ -75,7 +84,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     "type": "send_data",
-                    "command": "start_game",
+                    "command": "start_goa_game",
                     "data": data
                 })
             await self.send_command_success(command)
