@@ -7,7 +7,7 @@ class PlayerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['id', 'nick_name', 'avatar_id', 'coin']
+        fields = ['id', 'nick_name', 'avatar_key', 'coin']
 
     def get_user_id(self, player: Player):
         return player.user.id

@@ -5,7 +5,7 @@ from django.conf import settings
 class Player(models.Model):
     nick_name = models.CharField(max_length=20)
     coin = models.IntegerField(default=1000)
-    avatar_id = models.CharField(max_length=50, default="starter_1")
+    avatar_key = models.CharField(max_length=50, default="starter_1")
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
 
     def __str__(self) -> str:

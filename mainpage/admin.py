@@ -8,7 +8,7 @@ from . import models
 
 @admin.register(models.Player)
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ['nick_name', 'coin', 'avatar_id', 'user_is_superuser', 'user_is_staff', 'user_link']
+    list_display = ['nick_name', 'coin', 'avatar_key', 'user_is_superuser', 'user_is_staff', 'user_link']
     list_editable = ['coin']
     list_select_related = ['user']
 
