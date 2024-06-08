@@ -1,6 +1,6 @@
 import os
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "capebackend.settings.dev")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "capebackend.settings.prod")
 
 import django
 django.setup()
