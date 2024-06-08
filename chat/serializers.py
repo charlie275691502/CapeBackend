@@ -10,7 +10,7 @@ class MessagePlayerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['id', 'nick_name', 'avatar_id']
+        fields = ['id', 'nick_name', 'avatar_key']
 
     def get_user_id(self, player: Player):
         return player.user.id

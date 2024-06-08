@@ -20,7 +20,7 @@ class GOAPlayerSet(models.Model):
 class GOAPlayer(models.Model):
     order = models.IntegerField(default=0)
     is_bot = models.BooleanField(default=False)
-    character_key = models.CharField(max_length=50, default=0)
+    character_key = models.CharField(max_length=50)
     public_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
     public_card_count = models.IntegerField(default=0)
     strategy_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)

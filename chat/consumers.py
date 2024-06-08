@@ -5,8 +5,10 @@ from channels.db import database_sync_to_async
 from .models import Message, Room
 from mainpage.models import Player
 from TTTGame.models import TTTActionSet, TTTPlayerSet, TTTPlayer, TTTBoard, TTTGame, TTTRecord, TTTSetting
+from GOAGame.models import GOAActionSet, GOAPlayerSet, GOAPlayer, GOABoard, GOAGame, GOARecord, GOASetting
 from .serializers import MessageSerializer, RoomListSerializer
 from TTTGame.serializers import TTTGameSerializer
+from GOAGame.serializers import GOAGameSerializer
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -63,7 +65,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 })
 
         elif command == "start_game" :
-            data = await database_sync_to_async(self.create_game) (
+            # data = await database_sync_to_async(self.create_ttt_game) (
+            #     room_id)
+            
+            data = await database_sync_to_async(self.create_goa_game) (
                 room_id)
 
             await self.channel_layer.group_send(
@@ -147,7 +152,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         serializer = RoomListSerializer(room)
         return serializer.data
 
-    def create_game(self, room_id):
+    def create_ttt_game(self, room_id):
         board = TTTBoard.objects.create(positions=[0, 0, 0, 0, 0, 0, 0, 0, 0])
         init_board = TTTBoard.objects.create(positions=[0, 0, 0, 0, 0, 0, 0, 0, 0])
         action_set = TTTActionSet.objects.create()
@@ -164,4 +169,39 @@ class ChatConsumer(AsyncWebsocketConsumer):
         game = TTTGame.objects.create(board_id=board.id, player_set_id=player_set.id, setting_id=setting.id)
         TTTRecord.objects.create(init_board_id=init_board.id, action_set_id=action_set.id, game_id=game.id)
         serializer = TTTGameSerializer(game)
+        return serializer.data
+
+    def create_goa_game(self, room_id):
+        room = Room.objects.filter(id=room_id).first()
+        players = room.players.all()
+        
+        board = GOABoard.objects.create(
+            cards=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+            taking_turn_player_id=players.first().user.id)
+        init_board = GOABoard.objects.create(
+            cards=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+            taking_turn_player_id=players.first().user.id)
+        action_set = GOAActionSet.objects.create()
+        player_set = GOAPlayerSet.objects.create()
+        setting = GOASetting.objects.create()
+
+        team_order = 0
+        for player in players :
+            GOAPlayer.objects.create(
+                order=team_order,
+                is_bot=False,
+                character_key="Character_1",
+                public_cards=[1, 2, 3],
+                public_card_count=3,
+                strategy_cards=[],
+                strategy_card_count=0,
+                power=15,
+                power_limit=35,
+                player_id=player.user.id,
+                player_set_id=player_set.id)
+            team_order += 0
+
+        game = GOAGame.objects.create(board_id=board.id, player_set_id=player_set.id, setting_id=setting.id)
+        GOARecord.objects.create(init_board_id=init_board.id, action_set_id=action_set.id, game_id=game.id)
+        serializer = GOAGameSerializer(game)
         return serializer.data
