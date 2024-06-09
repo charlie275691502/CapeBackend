@@ -8,6 +8,9 @@ class GOABoardSerializer(serializers.ModelSerializer):
         fields = ['draw_card_count',
                   'grave_card_count',
                   'cards',
+                  'open_card_positions',
+                  'revealing_player_id',
+                  'revealing_card_positions',
                   'turn',
                   'taking_turn_player_id']
         

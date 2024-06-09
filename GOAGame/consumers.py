@@ -2,8 +2,11 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
+from .data_loader import DataLoader, GOACard
 from .models import GOAGame, GOAAction, GOARecord, GOASummary
 from .serializers import GOAActionSerializer, GOAGameSerializer, GOASummarySerializer
+import gspread
+from google.oauth2.service_account import Credentials
 
 class GOAGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -13,6 +16,11 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         self.record_action_set_id = record.action_set.id
         self.game_id = game_id
         self.game_group_name = "game_%s" % game_id
+        
+        
+        (card_datas) = await self.load_datas()
+        
+        print(card_datas.get_row("22").power)
         
         await self.channel_layer.group_add(
             self.game_group_name,
@@ -48,6 +56,15 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         command = event["command"]
         data = event["data"]
         await self.send(text_data=json.dumps({"command": command, "data": data}))
+        
+    async def load_datas(self):
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_file('goawebsocket-2c1d9a4aecc4.json', scopes=scope)
+        client = gspread.authorize(creds)
+        sheet = client.open('GOA Websocket Datasheet')
+
+        card_datas = DataLoader(sheet, "GOACards", GOACard)
+        return card_datas
 
     def get_game(self, game_id):
         return GOAGame.objects.filter(id=game_id).first()
