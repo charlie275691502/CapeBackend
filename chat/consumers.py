@@ -3,8 +3,6 @@ import random
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
-import gspread
-from google.oauth2.service_account import Credentials
 
 from Common.GameModel import GameModel
 from Common.DataLoader import DataLoader, Constant, GOACharacter
@@ -13,15 +11,14 @@ from TTTGame.models import TTTActionSet, TTTPlayerSet, TTTPlayer, TTTBoard, TTTG
 from GOAGame.models import GOAActionSet, GOAPlayerSet, GOAPlayer, GOABoard, GOAGame, GOARecord, GOASetting
 from .serializers import MessageSerializer, RoomListSerializer
 from TTTGame.serializers import TTTGameSerializer
-from GOAGame.serializers import GOAGameSerializer, GOAGameBoardRevealingSerializer
+from GOAGame.serializers import GOAGameSerializer
+from core.management.commands.load_game_data import game_data
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.room_group_name = "chat_%s" % room_id
-        
-        (self.constants, self.characters) = await self.load_datas()
         
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -123,16 +120,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         command = event["command"]
         data = event["data"]
         await self.send(text_data=json.dumps({"command": command, "data": data}))
-
-    async def load_datas(self):
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_file('goawebsocket-2c1d9a4aecc4.json', scopes=scope)
-        client = gspread.authorize(creds)
-        sheet = client.open('GOA Websocket Datasheet')
-
-        constants = DataLoader(sheet, "Constants", Constant)
-        characters = DataLoader(sheet, "GOACharacters", GOACharacter)
-        return (constants, characters)
     
     def create_message(self, room_id, player_id, content):
         message = Message.objects.create(room_id=room_id, player_id=player_id, content=content)
@@ -202,7 +189,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         players = room.players.all()
         
         game_model = GameModel.init(
-            self.constants.get_row("PublicCardCount").value,
+            game_data.constatns.get_row("PublicCardCount").value,
             [player.user.id for player in players]
         )
         
@@ -236,7 +223,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             GOAPlayer.objects.create(
                 order=game_model.player_ids.index(player.user.id),
                 is_bot=False,
-                character_key=random.choice(self.characters.ids),
+                character_key=random.choice(game_data.characters.ids),
                 public_cards=[],
                 public_card_count=0,
                 strategy_cards=[],
@@ -248,5 +235,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         game = GOAGame.objects.create(board_id=board.id, player_set_id=player_set.id, setting_id=setting.id)
         GOARecord.objects.create(init_board_id=init_board.id, action_set_id=action_set.id, game_id=game.id)
-        serializer = GOAGameBoardRevealingSerializer(game)
+        serializer = GOAGameSerializer(game)
         return serializer.data

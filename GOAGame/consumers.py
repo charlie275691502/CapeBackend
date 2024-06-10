@@ -19,8 +19,6 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         self.game_group_name = "game_%s" % game_id
         self.game_model = await database_sync_to_async(self.get_game_model)(game_id)
         
-        (card_datas) = await self.load_datas()
-        
         await self.channel_layer.group_add(
             self.game_group_name,
             self.channel_name)
@@ -55,15 +53,6 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         command = event["command"]
         data = event["data"]
         await self.send(text_data=json.dumps({"command": command, "data": data}))
-        
-    async def load_datas(self):
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_file('goawebsocket-2c1d9a4aecc4.json', scopes=scope)
-        client = gspread.authorize(creds)
-        sheet = client.open('GOA Websocket Datasheet')
-
-        card_datas = DataLoader(sheet, "GOACards", GOACard)
-        return card_datas
     
     def get_record(self, game_id: int):
         return GOARecord.objects.prefetch_related("action_set").filter(game_id=game_id).first()
