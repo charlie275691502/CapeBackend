@@ -2,7 +2,8 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
-from .data_loader import DataLoader, GOACard
+from Common.DataLoader import DataLoader, GOACard
+from Common.GameModel import GameModel
 from .models import GOAGame, GOAAction, GOARecord, GOASummary
 from .serializers import GOAActionSerializer, GOAGameSerializer, GOASummarySerializer
 import gspread
@@ -16,11 +17,9 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         self.record_action_set_id = record.action_set.id
         self.game_id = game_id
         self.game_group_name = "game_%s" % game_id
-        
+        self.game_model = await database_sync_to_async(self.get_game_model)(game_id)
         
         (card_datas) = await self.load_datas()
-        
-        print(card_datas.get_row("22").power)
         
         await self.channel_layer.group_add(
             self.game_group_name,
@@ -65,15 +64,16 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
 
         card_datas = DataLoader(sheet, "GOACards", GOACard)
         return card_datas
-
-    def get_game(self, game_id):
-        return GOAGame.objects.filter(id=game_id).first()
     
-    def get_record(self, game_id):
+    def get_record(self, game_id: int):
         return GOARecord.objects.prefetch_related("action_set").filter(game_id=game_id).first()
     
-    def get_player(self, game, player_id):
+    def get_player(self, game: GOAGame, player_id: int):
         return game.player_set.players.filter(player_id=player_id).first()
+    
+    def get_game_model(self, game_id: int):
+        game = GOAGame.objects.filter(id=game_id).first()
+        return GameModel.from_model(game)
 
     # def is_player_turn(self, game, player_id):
     #     return game.board.taking_turn_player_id == player_id

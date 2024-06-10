@@ -3,16 +3,52 @@ from .models import GOABoard, GOASetting, GOAPlayer, GOAAction, GOAActionCommand
 from mainpage.serializers import PlayerSerializer
 
 class GOABoardSerializer(serializers.ModelSerializer):
+    draw_card_count = serializers.SerializerMethodField(method_name='get_draw_card_count')
+    grave_card_count = serializers.SerializerMethodField(method_name='get_grave_card_count')
+    masked_board_cards = serializers.SerializerMethodField(method_name='get_masked_board_cards')
+    
     class Meta:
         model = GOABoard
         fields = ['draw_card_count',
                   'grave_card_count',
-                  'cards',
-                  'open_card_positions',
-                  'revealing_player_id',
-                  'revealing_card_positions',
+                  'masked_board_cards',
+                  'revealing_board_card_positions',
                   'turn',
                   'taking_turn_player_id']
+        
+    def get_draw_card_count(self, board: GOABoard):
+        return len(board.draw_cards)
+        
+    def get_grave_card_count(self, board: GOABoard):
+        return len(board.grave_cards)
+        
+    def get_masked_board_cards(self, board: GOABoard):
+        return [board_card if board_card == -1 or position in board.open_board_card_positions else 0
+                for (position, board_card) in enumerate(board.board_cards)]
+        
+class GOABoardRevealingSerializer(serializers.ModelSerializer):
+    draw_card_count = serializers.SerializerMethodField(method_name='get_draw_card_count')
+    grave_card_count = serializers.SerializerMethodField(method_name='get_grave_card_count')
+    masked_board_cards = serializers.SerializerMethodField(method_name='get_masked_board_cards')
+    
+    class Meta:
+        model = GOABoard
+        fields = ['draw_card_count',
+                  'grave_card_count',
+                  'masked_board_cards',
+                  'revealing_board_card_positions',
+                  'turn',
+                  'taking_turn_player_id']
+        
+    def get_draw_card_count(self, board: GOABoard):
+        return len(board.draw_cards)
+        
+    def get_grave_card_count(self, board: GOABoard):
+        return len(board.grave_cards)
+        
+    def get_masked_board_cards(self, board: GOABoard):
+        return [board_card if board_card == -1 or position in board.open_board_card_positions or position in board.revealing_board_card_positions else 0
+                for (position, board_card) in enumerate(board.board_cards)]
         
 class GOASettingSerializer(serializers.ModelSerializer):
     class Meta:
@@ -105,6 +141,18 @@ class GOARecordSerializer(serializers.ModelSerializer):
 
 class GOAGameSerializer(serializers.ModelSerializer):
     board = GOABoardSerializer(read_only=True)
+    players = serializers.SerializerMethodField(method_name='get_players')
+    setting = GOASettingSerializer(read_only=True)
+    
+    class Meta:
+        model = GOAGame
+        fields = ['id', 'board', 'players', 'setting']
+
+    def get_players(self, game: GOAGame):
+        return GOAPlayerSerializer(game.player_set.players.all(), many = True).data
+    
+class GOAGameBoardRevealingSerializer(serializers.ModelSerializer):
+    board = GOABoardRevealingSerializer(read_only=True)
     players = serializers.SerializerMethodField(method_name='get_players')
     setting = GOASettingSerializer(read_only=True)
     

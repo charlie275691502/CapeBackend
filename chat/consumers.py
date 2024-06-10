@@ -1,20 +1,27 @@
 import json
+import random
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
+import gspread
+from google.oauth2.service_account import Credentials
+
+from Common.GameModel import GameModel
+from Common.DataLoader import DataLoader, Constant, GOACharacter
 from .models import Message, Room
-from mainpage.models import Player
 from TTTGame.models import TTTActionSet, TTTPlayerSet, TTTPlayer, TTTBoard, TTTGame, TTTRecord, TTTSetting
 from GOAGame.models import GOAActionSet, GOAPlayerSet, GOAPlayer, GOABoard, GOAGame, GOARecord, GOASetting
 from .serializers import MessageSerializer, RoomListSerializer
 from TTTGame.serializers import TTTGameSerializer
-from GOAGame.serializers import GOAGameSerializer
+from GOAGame.serializers import GOAGameSerializer, GOAGameBoardRevealingSerializer
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.room_group_name = "chat_%s" % room_id
+        
+        (self.constants, self.characters) = await self.load_datas()
         
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -117,6 +124,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         data = event["data"]
         await self.send(text_data=json.dumps({"command": command, "data": data}))
 
+    async def load_datas(self):
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_file('goawebsocket-2c1d9a4aecc4.json', scopes=scope)
+        client = gspread.authorize(creds)
+        sheet = client.open('GOA Websocket Datasheet')
+
+        constants = DataLoader(sheet, "Constants", Constant)
+        characters = DataLoader(sheet, "GOACharacters", GOACharacter)
+        return (constants, characters)
+    
     def create_message(self, room_id, player_id, content):
         message = Message.objects.create(room_id=room_id, player_id=player_id, content=content)
         serializer = MessageSerializer(message)
@@ -184,33 +201,52 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room = Room.objects.filter(id=room_id).first()
         players = room.players.all()
         
+        game_model = GameModel.init(
+            self.constants.get_row("PublicCardCount").value,
+            [player.user.id for player in players]
+        )
+        
         board = GOABoard.objects.create(
-            cards=[1, 2, 3, 4, 5, 6, 7, 8, 9],
-            taking_turn_player_id=players.first().user.id)
+            draw_cards=game_model.draw_cards,
+            grave_cards=game_model.grave_cards,
+            board_cards=game_model.board_cards,
+            open_board_card_positions=game_model.open_board_card_positions,
+            revealing_player_id=game_model.revealing_player_id,
+            revealing_board_card_positions=game_model.revealing_board_card_positions,
+            turn=game_model.turn,
+            player_ids=game_model.player_ids,
+            taking_turn_player_id=game_model.taking_turn_player_id)
+        
         init_board = GOABoard.objects.create(
-            cards=[1, 2, 3, 4, 5, 6, 7, 8, 9],
-            taking_turn_player_id=players.first().user.id)
+            draw_cards=game_model.draw_cards,
+            grave_cards=game_model.grave_cards,
+            board_cards=game_model.board_cards,
+            open_board_card_positions=game_model.open_board_card_positions,
+            revealing_player_id=game_model.revealing_player_id,
+            revealing_board_card_positions=game_model.revealing_board_card_positions,
+            turn=game_model.turn,
+            player_ids=game_model.player_ids,
+            taking_turn_player_id=game_model.taking_turn_player_id)
+        
         action_set = GOAActionSet.objects.create()
         player_set = GOAPlayerSet.objects.create()
         setting = GOASetting.objects.create()
 
-        team_order = 0
         for player in players :
             GOAPlayer.objects.create(
-                order=team_order,
+                order=game_model.player_ids.index(player.user.id),
                 is_bot=False,
-                character_key="Character_1",
-                public_cards=[1, 2, 3],
-                public_card_count=3,
+                character_key=random.choice(self.characters.ids),
+                public_cards=[],
+                public_card_count=0,
                 strategy_cards=[],
                 strategy_card_count=0,
-                power=15,
+                power=0,
                 power_limit=35,
                 player_id=player.user.id,
                 player_set_id=player_set.id)
-            team_order += 0
 
         game = GOAGame.objects.create(board_id=board.id, player_set_id=player_set.id, setting_id=setting.id)
         GOARecord.objects.create(init_board_id=init_board.id, action_set_id=action_set.id, game_id=game.id)
-        serializer = GOAGameSerializer(game)
+        serializer = GOAGameBoardRevealingSerializer(game)
         return serializer.data
