@@ -46,7 +46,11 @@ class GOARevealBoardCardsActionCommand(GOAActionCommand):
     positions = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     pass
 
-class GOAChooseBoardCardActionCommand(GOAActionCommand):
+class GOAChooseRevealingBoardCardActionCommand(GOAActionCommand):
+    position = models.IntegerField(default=0)
+    pass
+
+class GOAChooseOpenBoardCardActionCommand(GOAActionCommand):
     position = models.IntegerField(default=0)
     pass
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GOABoard, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOAChooseBoardCardActionCommand, GOARecord, GOAGame, GOASummary
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary
 from mainpage.serializers import PlayerSerializer
 
 class GOABoardSerializer(serializers.ModelSerializer):
@@ -85,9 +85,14 @@ class GOARevealBoardCardsActionCommandSerializer(serializers.ModelSerializer):
         model = GOARevealBoardCardsActionCommand
         fields = ['positions']
 
-class GOAChooseBoardCardActionCommandSerializer(serializers.ModelSerializer):
+class GOAChooseRevealingBoardCardActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
-        model = GOAChooseBoardCardActionCommand
+        model = GOAChooseRevealingBoardCardActionCommand
+        fields = ['position']
+
+class GOAChooseOpenBoardCardActionCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAChooseOpenBoardCardActionCommand
         fields = ['position']
 
 class GOAActionSerializer(serializers.ModelSerializer):
