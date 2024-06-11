@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 *.env
 migrations/
+goawebsocket-2c1d9a4aecc4.json

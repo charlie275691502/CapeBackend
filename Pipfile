@@ -18,6 +18,8 @@ django-environ = "*"
 gunicorn = "*"
 whitenoise = "*"
 daphne = "*"
+gspread = "*"
+google-auth = "*"
 
 [dev-packages]
 

@@ -5,10 +5,14 @@ from django.contrib.contenttypes.models import ContentType
 from mainpage.models import Player
 
 class GOABoard(models.Model):
-    draw_card_count = models.IntegerField(default=0)
-    grave_card_count = models.IntegerField(default=0)
-    cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
+    draw_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
+    grave_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
+    board_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
+    open_board_card_positions = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
+    revealing_player_id = models.IntegerField(default=0)
+    revealing_board_card_positions = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     turn = models.IntegerField(default=1)
+    player_ids = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     taking_turn_player_id = models.IntegerField(default=0)
 
 class GOASetting(models.Model):
@@ -42,7 +46,11 @@ class GOARevealBoardCardsActionCommand(GOAActionCommand):
     positions = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     pass
 
-class GOAChooseBoardCardActionCommand(GOAActionCommand):
+class GOAChooseRevealingBoardCardActionCommand(GOAActionCommand):
+    position = models.IntegerField(default=0)
+    pass
+
+class GOAChooseOpenBoardCardActionCommand(GOAActionCommand):
     position = models.IntegerField(default=0)
     pass
 
