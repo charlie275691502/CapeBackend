@@ -13,7 +13,8 @@ class GOABoardAdmin(admin.ModelAdmin):
                     'revealing_board_card_positions',
                     'turn',
                     'player_ids',
-                    'taking_turn_player_id']
+                    'taking_turn_player_id',
+                    'phase']
 
 @admin.register(GOASetting)
 class GOASettingAdmin(admin.ModelAdmin):

@@ -14,7 +14,8 @@ class GameModel:
                  player_cards,
                  player_ids,
                  taking_turn_player_id,
-                 turn):
+                 turn,
+                 phase):
         
         self.draw_cards = draw_cards
         self.grave_cards = grave_cards
@@ -27,6 +28,7 @@ class GameModel:
         self.player_ids = player_ids
         self.taking_turn_player_id = taking_turn_player_id
         self.turn = turn
+        self.phase = phase
         pass
 
     @classmethod
@@ -42,6 +44,7 @@ class GameModel:
                     {player_id: [] for player_id in player_ids},
                     player_ids,
                     player_ids[0],
+                    1,
                     1)
         model.refill_board_cards()
         return model
@@ -59,7 +62,11 @@ class GameModel:
                    {player.player.user.id: player.public_cards for player in game.player_set.players.all()},
                    game.board.player_ids,
                    game.board.taking_turn_player_id,
-                   game.board.turn)
+                   game.board.turn,
+                   game.board.phase)
+        
+    CHOOSE_BOARD_CARD_PHASE = 1
+    ACTION_PHASE = 1
         
     def refill_board_cards(self):
         for i in range(len(self.board_cards)) :

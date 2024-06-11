@@ -56,7 +56,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
 
     async def send_command_fail(self, command, errorMessage):
-        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": errorMessage}))
+        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": {"error": errorMessage}}))
 
     async def send_data(self, event):
         command = event["command"]
@@ -149,6 +149,10 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not your turn")
             return
             
+        if self.game.board.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
+            await self.send_command_fail(command, "Not choose board card phase")
+            return
+            
         if len(self.game.board.revealing_board_card_positions) > 0 :
             await self.send_command_fail(command, "Already chose revealed card")
             return
@@ -181,6 +185,10 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not your turn")
             return
             
+        if self.game.board.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
+            await self.send_command_fail(command, "Not choose board card phase")
+            return
+            
         if len(self.game.board.revealing_board_card_positions) == 0 :
             await self.send_command_fail(command, "haven't chosen revealed card")
             return
@@ -196,7 +204,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         
         player.public_cards.append(self.game.board.board_cards[position])
         self.game.board.board_cards[position] = -1
-        self.game.board.open_board_card_positions.append([revaling_board_card_position for revaling_board_card_position in self.game.board.revealing_board_card_positions if revaling_board_card_position != position]) 
+        self.game.board.open_board_card_positions.extend([revaling_board_card_position for revaling_board_card_position in self.game.board.revealing_board_card_positions if revaling_board_card_position != position]) 
         self.game.board.revealing_board_card_positions = []
         self.game.board.revealing_player_id = -1
         await self.save_player(player)
@@ -215,6 +223,10 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             
         if self.game.board.taking_turn_player_id != player_id:
             await self.send_command_fail(command, "Not your turn")
+            return
+            
+        if self.game.board.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
+            await self.send_command_fail(command, "Not choose board card phase")
             return
             
         if len(self.game.board.revealing_board_card_positions) > 0 :

@@ -14,7 +14,8 @@ class GOABoardSerializer(serializers.ModelSerializer):
                   'masked_board_cards',
                   'revealing_board_card_positions',
                   'turn',
-                  'taking_turn_player_id']
+                  'taking_turn_player_id',
+                  'phase']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
@@ -38,7 +39,8 @@ class GOABoardRevealingSerializer(serializers.ModelSerializer):
                   'masked_board_cards',
                   'revealing_board_card_positions',
                   'turn',
-                  'taking_turn_player_id']
+                  'taking_turn_player_id',
+                  'phase']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
