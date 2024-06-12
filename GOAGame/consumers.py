@@ -2,7 +2,7 @@ import json
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from Common.GameModel import GameModel
-from .models import GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAGame, GOAAction, GOAPlayer, GOARecord, GOARevealBoardCardsActionCommand, GOASummary
+from .models import GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAGame, GOAAction, GOAPlayer, GOARecord, GOARevealBoardCardsActionCommand, GOASummary
 from .serializers import GOAActionSerializer, GOAGameBoardRevealingSerializer, GOAGameSerializer, GOASummarySerializer
 
 class GOAGameConsumer(AsyncWebsocketConsumer):
@@ -51,6 +51,8 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
                 await self.choose_revealing_board_card_action(text_data_json, player_id, command)
             case "choose_open_board_card_action":
                 await self.choose_open_board_card_action(text_data_json, player_id, command)
+            case "end_turn_action":
+                await self.end_turn_action(text_data_json, player_id, command)
     
     async def send_command_success(self, command):
         await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
@@ -76,7 +78,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             lambda: GOAGame.objects.filter(id=game_id).first()
         )()
     
-    async def get_players(self):
+    async def get_players(self) -> list[GOAPlayer]:
         return await database_sync_to_async(
             lambda: list(self.game.player_set.players.select_related("player__user").all())
         )()
@@ -100,27 +102,17 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
         return await database_sync_to_async(
             lambda: GameModel.from_model(game)
         )()
-        
-    async def save_board(self):
-        return await database_sync_to_async(
-            lambda: self.game.board.save()
-        )()
-        
-    async def save_player(self, player: GOAPlayer):
-        return await database_sync_to_async(
-            lambda: player.save()
-        )()
     
-    async def update_game_and_group_send(self):
+    async def update_game(self):
         self.game = await self.get_game(self.game_id)
-        self.game_model = await self.get_game_model(self.game)
-        
+    
+    async def group_send(self):
         gameBoardRevealingSerializer = await self.get_game_board_revealing_serializer()
         gameSerializer = await self.get_game_serializer()
         
         players = await self.get_players()
         for player in players:
-            if player.player.user.id == self.game.board.taking_turn_player_id :
+            if player.player.user.id == self.game_model.taking_turn_player_id :
                 await self.channel_layer.group_send(
                     self.get_player_group(player.player.user.id),
                     {
@@ -138,116 +130,147 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
                     })
     
     async def reveal_board_cards(self, text_data_json, player_id, command):
-        def create_reveal_board_cards_action_command(player, positions):
+        def create_reveal_board_cards_action_command(player_id, positions):
             action_command = GOARevealBoardCardsActionCommand.objects.create(positions=positions)
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
-                player_id=player.player.user.id,
+                player_id=player_id,
                 action_command=action_command)
             
-        if self.game.board.taking_turn_player_id != player_id:
+        if self.game_model.taking_turn_player_id != player_id:
             await self.send_command_fail(command, "Not your turn")
             return
             
-        if self.game.board.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
+        if self.game_model.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
             await self.send_command_fail(command, "Not choose board card phase")
             return
             
-        if len(self.game.board.revealing_board_card_positions) > 0 :
+        if len(self.game_model.revealing_board_card_positions) > 0 :
             await self.send_command_fail(command, "Already chose revealed card")
             return
             
-        player = await self.get_player(player_id)
         positions = text_data_json["positions"]
         
-        if any(position for position in positions if position in self.game.board.open_board_card_positions or self.game.board.board_cards[position] == -1) :
+        if any(position for position in positions if position in self.game_model.open_board_card_positions or self.game_model.board_cards[position] == -1) :
             await self.send_command_fail(command, "Must choose covered card")
             return
         
-        await database_sync_to_async(create_reveal_board_cards_action_command)(player, positions)
+        await database_sync_to_async(create_reveal_board_cards_action_command)(player_id, positions)
         
-        self.game.board.revealing_board_card_positions = positions
-        self.game.board.revealing_player_id = player_id
-        await self.save_board()
+        self.game_model.revealing_board_card_positions = positions
+        self.game_model.revealing_player_id = player_id
         
-        await self.update_game_and_group_send()
+        players = await self.get_players()
+        await self.game_model.save_to_model(self.game, players)
+        await self.update_game()
+        await self.group_send()
         await self.send_command_success(command)
     
     async def choose_revealing_board_card_action(self, text_data_json, player_id, command):
-        def create_choose_revealing_board_card_action_command(player, position):
+        def create_choose_revealing_board_card_action_command(player_id, position):
             action_command = GOAChooseRevealingBoardCardActionCommand.objects.create(position=position)
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
-                player_id=player.player.user.id,
+                player_id=player_id,
                 action_command=action_command)
             
-        if self.game.board.taking_turn_player_id != player_id:
+        if self.game_model.taking_turn_player_id != player_id:
             await self.send_command_fail(command, "Not your turn")
             return
             
-        if self.game.board.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
+        if self.game_model.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
             await self.send_command_fail(command, "Not choose board card phase")
             return
             
-        if len(self.game.board.revealing_board_card_positions) == 0 :
+        if len(self.game_model.revealing_board_card_positions) == 0 :
             await self.send_command_fail(command, "haven't chosen revealed card")
             return
         
-        player = await self.get_player(player_id)
         position = text_data_json["position"]
         
-        if position not in self.game.board.revealing_board_card_positions or self.game.board.board_cards[position] == -1:
+        if position not in self.game_model.revealing_board_card_positions or self.game_model.board_cards[position] == -1:
             await self.send_command_fail(command, "Must choose revealed card")
             return
         
-        await database_sync_to_async(create_choose_revealing_board_card_action_command)(player, position)
+        await database_sync_to_async(create_choose_revealing_board_card_action_command)(player_id, position)
         
-        player.public_cards.append(self.game.board.board_cards[position])
-        self.game.board.board_cards[position] = -1
-        self.game.board.open_board_card_positions.extend([revaling_board_card_position for revaling_board_card_position in self.game.board.revealing_board_card_positions if revaling_board_card_position != position]) 
-        self.game.board.revealing_board_card_positions = []
-        self.game.board.revealing_player_id = -1
-        await self.save_player(player)
-        await self.save_board()
-        
-        await self.update_game_and_group_send()
+        self.game_model.player_cards[player_id].append(self.game_model.board_cards[position])
+        self.game_model.board_cards[position] = -1
+        self.game_model.open_board_card_positions.extend([revaling_board_card_position for revaling_board_card_position in self.game_model.revealing_board_card_positions if revaling_board_card_position != position]) 
+        self.game_model.revealing_board_card_positions = []
+        self.game_model.revealing_player_id = -1
+        self.game_model.phase = GameModel.ACTION_PHASE
+
+        players = await self.get_players()
+        await self.game_model.save_to_model(self.game, players)
+        await self.update_game()
+        await self.group_send()
         await self.send_command_success(command)
     
     async def choose_open_board_card_action(self, text_data_json, player_id, command):
-        def create_choose_open_board_card_action_command(player, position):
+        def create_choose_open_board_card_action_command(player_id, position):
             action_command = GOAChooseOpenBoardCardActionCommand.objects.create(position=position)
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
-                player_id=player.player.user.id,
+                player_id=player_id,
                 action_command=action_command)
             
-        if self.game.board.taking_turn_player_id != player_id:
+        if self.game_model.taking_turn_player_id != player_id:
             await self.send_command_fail(command, "Not your turn")
             return
             
-        if self.game.board.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
+        if self.game_model.phase != GameModel.CHOOSE_BOARD_CARD_PHASE:
             await self.send_command_fail(command, "Not choose board card phase")
             return
             
-        if len(self.game.board.revealing_board_card_positions) > 0 :
+        if len(self.game_model.revealing_board_card_positions) > 0 :
             await self.send_command_fail(command, "Must Choose Revealed cards")
             return
         
-        player = await self.get_player(player_id)
         position = text_data_json["position"]
         
-        if position not in self.game.board.open_board_card_positions or self.game.board.board_cards[position] == -1:
+        if position not in self.game_model.open_board_card_positions or self.game_model.board_cards[position] == -1:
             await self.send_command_fail(command, "Must choose open card")
             return
         
-        await database_sync_to_async(create_choose_open_board_card_action_command)(player, position)
+        await database_sync_to_async(create_choose_open_board_card_action_command)(player_id, position)
         
-        player.public_cards.append(self.game.board.board_cards[position])
-        self.game.board.board_cards[position] = -1
-        self.game.board.open_board_card_positions.remove(position) 
-        await self.save_player(player)
-        await self.save_board()
+        self.game_model.player_cards[player_id].append(self.game_model.board_cards[position])
+        self.game_model.board_cards[position] = -1
+        self.game_model.open_board_card_positions.remove(position) 
+        self.game_model.phase = GameModel.ACTION_PHASE
         
-        await self.update_game_and_group_send()
+        players = await self.get_players()
+        await self.game_model.save_to_model(self.game, players)
+        await self.update_game()
+        await self.group_send()
         await self.send_command_success(command)
+        
+    async def end_turn_action(self, text_data_json, player_id, command):
+        def create_end_turn_action_command(player_id):
+            action_command = GOAEndTurnActionCommand.objects.create()
+            GOAAction.objects.create(
+                action_set_id=self.record_action_set_id,
+                player_id=player_id,
+                action_command=action_command)
+            
+        if self.game_model.taking_turn_player_id != player_id:
+            await self.send_command_fail(command, "Not your turn")
+            return
+            
+        if self.game_model.phase != GameModel.ACTION_PHASE:
+            await self.send_command_fail(command, "Not action phase")
+            return
+        
+        await database_sync_to_async(create_end_turn_action_command)(player_id)
+        
+        self.game_model.next_turn()
+        # check game end
+        
+        players = await self.get_players()
+        await self.game_model.save_to_model(self.game, players)
+        await self.update_game()
+        await self.group_send()
+        await self.send_command_success(command)
+        
     

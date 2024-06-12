@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary
 
 # Register your models here.
 
@@ -33,9 +33,7 @@ class GOAPlayerAdmin(admin.ModelAdmin):
                     'is_bot',
                     'character_key',
                     'public_cards',
-                    'public_card_count',
                     'strategy_cards',
-                    'strategy_card_count',
                     'power',
                     'power_limit',
                     'player',
@@ -61,6 +59,10 @@ class GOAChooseRevealingBoardCardActionCommandAdmin(admin.ModelAdmin):
 @admin.register(GOAChooseOpenBoardCardActionCommand)
 class GOAChooseOpenBoardCardActionCommandAdmin(admin.ModelAdmin):
     list_display = ['position']
+
+@admin.register(GOAEndTurnActionCommand)
+class GOAEndTurnActionCommandAdmin(admin.ModelAdmin):
+    list_display = []
 
 @admin.register(GOAAction)
 class GOAActionAdmin(admin.ModelAdmin):

@@ -27,9 +27,7 @@ class GOAPlayer(models.Model):
     is_bot = models.BooleanField(default=False)
     character_key = models.CharField(max_length=50)
     public_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
-    public_card_count = models.IntegerField(default=0)
     strategy_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
-    strategy_card_count = models.IntegerField(default=0)
     power = models.IntegerField(default=0)
     power_limit = models.IntegerField(default=0)
     
@@ -53,6 +51,9 @@ class GOAChooseRevealingBoardCardActionCommand(GOAActionCommand):
 
 class GOAChooseOpenBoardCardActionCommand(GOAActionCommand):
     position = models.IntegerField(default=0)
+    pass
+
+class GOAEndTurnActionCommand(GOAActionCommand):
     pass
 
 class GOAActionSet(models.Model):
