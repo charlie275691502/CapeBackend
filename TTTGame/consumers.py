@@ -74,7 +74,7 @@ class TTTGameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
 
     async def send_command_fail(self, command, errorMessage):
-        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": errorMessage}))
+        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": {"error": errorMessage}}))
 
     async def send_data(self, event):
         command = event["command"]

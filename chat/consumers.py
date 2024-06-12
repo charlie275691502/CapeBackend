@@ -114,7 +114,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
 
     async def send_command_fail(self, command, errorMessage):
-        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": errorMessage}))
+        await self.send(text_data=json.dumps({"command": f"{command}_fail", "data": {"error": errorMessage}}))
 
     async def send_data(self, event):
         command = event["command"]
@@ -202,7 +202,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             revealing_board_card_positions=game_model.revealing_board_card_positions,
             turn=game_model.turn,
             player_ids=game_model.player_ids,
-            taking_turn_player_id=game_model.taking_turn_player_id)
+            taking_turn_player_id=game_model.taking_turn_player_id,
+            phase=game_model.phase)
         
         init_board = GOABoard.objects.create(
             draw_cards=game_model.draw_cards,
@@ -213,7 +214,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             revealing_board_card_positions=game_model.revealing_board_card_positions,
             turn=game_model.turn,
             player_ids=game_model.player_ids,
-            taking_turn_player_id=game_model.taking_turn_player_id)
+            taking_turn_player_id=game_model.taking_turn_player_id,
+            phase=game_model.phase)
         
         action_set = GOAActionSet.objects.create()
         player_set = GOAPlayerSet.objects.create()
@@ -225,9 +227,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 is_bot=False,
                 character_key=random.choice(game_data.characters.ids),
                 public_cards=[],
-                public_card_count=0,
                 strategy_cards=[],
-                strategy_card_count=0,
                 power=0,
                 power_limit=35,
                 player_id=player.user.id,

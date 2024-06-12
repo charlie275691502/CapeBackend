@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary
 from mainpage.serializers import PlayerSerializer
 
 class GOABoardSerializer(serializers.ModelSerializer):
@@ -14,7 +14,8 @@ class GOABoardSerializer(serializers.ModelSerializer):
                   'masked_board_cards',
                   'revealing_board_card_positions',
                   'turn',
-                  'taking_turn_player_id']
+                  'taking_turn_player_id',
+                  'phase']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
@@ -38,7 +39,8 @@ class GOABoardRevealingSerializer(serializers.ModelSerializer):
                   'masked_board_cards',
                   'revealing_board_card_positions',
                   'turn',
-                  'taking_turn_player_id']
+                  'taking_turn_player_id',
+                  'phase']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
@@ -57,6 +59,8 @@ class GOASettingSerializer(serializers.ModelSerializer):
         
 class GOAPlayerSerializer(serializers.ModelSerializer):
     player = PlayerSerializer(read_only=True)
+    public_card_count = serializers.SerializerMethodField(method_name='get_public_card_count')
+    strategy_card_count = serializers.SerializerMethodField(method_name='get_strategy_card_count')
 
     class Meta:
         model = GOAPlayer
@@ -73,6 +77,12 @@ class GOAPlayerSerializer(serializers.ModelSerializer):
                   'elo',
                   'played_game_count',
                   'win_game_count']
+        
+    def get_public_card_count(self, player: GOAPlayer):
+        return len(player.public_cards)
+        
+    def get_strategy_card_count(self, player: GOAPlayer):
+        return len(player.strategy_cards)
 
 class GOAActionCommandSerializer(serializers.Serializer):
     class Meta:
@@ -93,6 +103,11 @@ class GOAChooseRevealingBoardCardActionCommandSerializer(serializers.ModelSerial
 class GOAChooseOpenBoardCardActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = GOAChooseOpenBoardCardActionCommand
+        fields = ['position']
+
+class GOAEndTurnActionCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAEndTurnActionCommand
         fields = ['position']
 
 class GOAActionSerializer(serializers.ModelSerializer):
