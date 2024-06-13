@@ -1,8 +1,10 @@
 import json
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from Common.DataLoader import CardType
 from Common.GameModel import GameModel
-from .models import GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAGame, GOAAction, GOAPlayer, GOARecord, GOARevealBoardCardsActionCommand, GOASummary
+from core.management.commands.load_game_data import game_data
+from .models import GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAGame, GOAAction, GOAPlayer, GOARecord, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand
 from .serializers import GOAActionSerializer, GOAGameBoardRevealingSerializer, GOAGameSerializer, GOASummarySerializer
 
 class GOAGameConsumer(AsyncWebsocketConsumer):
@@ -51,6 +53,12 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
                 await self.choose_revealing_board_card_action(text_data_json, player_id, command)
             case "choose_open_board_card_action":
                 await self.choose_open_board_card_action(text_data_json, player_id, command)
+            case "use_mask_action":
+                await self.use_mask_action(text_data_json, player_id, command)
+            case "use_reform_action":
+                await self.use_reform_action(text_data_json, player_id, command)
+            case "use_expand_action":
+                await self.use_expand_action(text_data_json, player_id, command)
             case "end_turn_action":
                 await self.end_turn_action(text_data_json, player_id, command)
     
@@ -130,7 +138,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
                     })
     
     async def reveal_board_cards(self, text_data_json, player_id, command):
-        def create_reveal_board_cards_action_command(player_id, positions):
+        def create_command(player_id, positions):
             action_command = GOARevealBoardCardsActionCommand.objects.create(positions=positions)
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
@@ -155,19 +163,15 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Must choose covered card")
             return
         
-        await database_sync_to_async(create_reveal_board_cards_action_command)(player_id, positions)
+        await database_sync_to_async(create_command)(player_id, positions)
+        await self.game_model.reveal_board_cards(self.game, player_id, positions)
         
-        self.game_model.revealing_board_card_positions = positions
-        self.game_model.revealing_player_id = player_id
-        
-        players = await self.get_players()
-        await self.game_model.save_to_model(self.game, players)
         await self.update_game()
         await self.group_send()
         await self.send_command_success(command)
     
     async def choose_revealing_board_card_action(self, text_data_json, player_id, command):
-        def create_choose_revealing_board_card_action_command(player_id, position):
+        def create_command(player_id, position):
             action_command = GOAChooseRevealingBoardCardActionCommand.objects.create(position=position)
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
@@ -192,23 +196,15 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Must choose revealed card")
             return
         
-        await database_sync_to_async(create_choose_revealing_board_card_action_command)(player_id, position)
+        await database_sync_to_async(create_command)(player_id, position)
+        await self.game_model.choose_revealing_board_card(self.game, player_id, position)
         
-        self.game_model.player_cards[player_id].append(self.game_model.board_cards[position])
-        self.game_model.board_cards[position] = -1
-        self.game_model.open_board_card_positions.extend([revaling_board_card_position for revaling_board_card_position in self.game_model.revealing_board_card_positions if revaling_board_card_position != position]) 
-        self.game_model.revealing_board_card_positions = []
-        self.game_model.revealing_player_id = -1
-        self.game_model.phase = GameModel.ACTION_PHASE
-
-        players = await self.get_players()
-        await self.game_model.save_to_model(self.game, players)
         await self.update_game()
         await self.group_send()
         await self.send_command_success(command)
     
     async def choose_open_board_card_action(self, text_data_json, player_id, command):
-        def create_choose_open_board_card_action_command(player_id, position):
+        def create_command(player_id, position):
             action_command = GOAChooseOpenBoardCardActionCommand.objects.create(position=position)
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
@@ -233,21 +229,158 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Must choose open card")
             return
         
-        await database_sync_to_async(create_choose_open_board_card_action_command)(player_id, position)
+        await database_sync_to_async(create_command)(player_id, position)
+        await self.game_model.choose_open_board_card(self.game, player_id, position)
         
-        self.game_model.player_cards[player_id].append(self.game_model.board_cards[position])
-        self.game_model.board_cards[position] = -1
-        self.game_model.open_board_card_positions.remove(position) 
-        self.game_model.phase = GameModel.ACTION_PHASE
+        await self.update_game()
+        await self.group_send()
+        await self.send_command_success(command)
+    
+    async def use_mask_action(self, text_data_json, player_id, command):
+        def create_command(player_id, card):
+            action_command = GOAUseMaskActionCommand.objects.create(card=card)
+            GOAAction.objects.create(
+                action_set_id=self.record_action_set_id,
+                player_id=player_id,
+                action_command=action_command)
+            
+        if self.game_model.taking_turn_player_id != player_id:
+            await self.send_command_fail(command, "Not your turn")
+            return
+            
+        if self.game_model.phase != GameModel.ACTION_PHASE:
+            await self.send_command_fail(command, "Not action phase")
+            return
+            
+        if self.game_model.is_mask_used :
+            await self.send_command_fail(command, "Mask has been used in this turn")
+            return
         
-        players = await self.get_players()
-        await self.game_model.save_to_model(self.game, players)
+        card = text_data_json["card"]
+        goa_card = game_data.cards.get_row(str(card))
+        
+        if card not in self.game_model.player_public_cards[player_id]:
+            await self.send_command_fail(command, f"card id {card} not found in your hand")
+            return
+            
+        if goa_card.card_type != CardType.ActionMask:
+            await self.send_command_fail(command, "Invalid mask card")
+            return
+        
+        await database_sync_to_async(create_command)(player_id, card)
+        await self.game_model.use_mask(self.game, player_id, card)
+        
+        await self.update_game()
+        await self.group_send()
+        await self.send_command_success(command)
+    
+    async def use_reform_action(self, text_data_json, player_id, command):
+        def create_command(player_id, card):
+            action_command = GOAUseReformActionCommand.objects.create(card=card)
+            GOAAction.objects.create(
+                action_set_id=self.record_action_set_id,
+                player_id=player_id,
+                action_command=action_command)
+            
+        if self.game_model.taking_turn_player_id != player_id:
+            await self.send_command_fail(command, "Not your turn")
+            return
+            
+        if self.game_model.phase != GameModel.ACTION_PHASE:
+            await self.send_command_fail(command, "Not action phase")
+            return
+            
+        if self.game_model.is_reform_used :
+            await self.send_command_fail(command, "Reform has been used in this turn")
+            return
+        
+        card = text_data_json["card"]
+        goa_card = game_data.cards.get_row(str(card))
+        target_card = text_data_json["target_card"]
+        goa_target_card = game_data.cards.get_row(str(target_card))
+        
+        if card not in self.game_model.player_public_cards[player_id]:
+            await self.send_command_fail(command, f"card id {card} not found in your hand")
+            return
+        
+        if target_card not in self.game_model.player_public_cards[player_id]:
+            await self.send_command_fail(command, f"target_card id {card} not found in your hand")
+            return
+            
+        if goa_card.card_type != CardType.ActionReform:
+            await self.send_command_fail(command, "Invalid reform card")
+            return
+            
+        if goa_target_card.card_type != CardType.Power:
+            await self.send_command_fail(command, "Cannot reform non-power cards")
+            return
+            
+        if goa_card.power_type != goa_target_card.power_type:
+            await self.send_command_fail(command, "Cannot reform card of different power types")
+            return
+        
+        await database_sync_to_async(create_command)(player_id, card)
+        await self.game_model.use_reform(self.game, player_id, card, target_card)
+        
+        await self.update_game()
+        await self.group_send()
+        await self.send_command_success(command)
+    
+    async def use_expand_action(self, text_data_json, player_id, command):
+        def create_command(player_id, card):
+            action_command = GOAUseExpandActionCommand.objects.create(card=card)
+            GOAAction.objects.create(
+                action_set_id=self.record_action_set_id,
+                player_id=player_id,
+                action_command=action_command)
+            
+        if self.game_model.taking_turn_player_id != player_id:
+            await self.send_command_fail(command, "Not your turn")
+            return
+            
+        if self.game_model.phase != GameModel.ACTION_PHASE:
+            await self.send_command_fail(command, "Not action phase")
+            return
+            
+        if self.game_model.is_expand_used :
+            await self.send_command_fail(command, "Expand has been used in this turn")
+            return
+        
+        card = text_data_json["card"]
+        goa_card = game_data.cards.get_row(str(card))
+        target_position = text_data_json["target_position"]
+        
+        if target_position not in self.game_model.open_board_card_positions or self.game_model.board_cards[target_position] == -1:
+            await self.send_command_fail(command, "Must choose open card")
+            return
+        
+        goa_target_card = game_data.cards.get_row(str(self.board_cards[target_position]))
+        
+        if card not in self.game_model.player_public_cards[player_id]:
+            await self.send_command_fail(command, f"card id {card} not found in your hand")
+            return
+            
+        if goa_card.card_type != CardType.ActionExpand:
+            await self.send_command_fail(command, "Invalid expand card")
+            return
+            
+        if goa_target_card.card_type != CardType.Power:
+            await self.send_command_fail(command, "Cannot expand non-power cards")
+            return
+            
+        if goa_card.power_type != goa_target_card.power_type:
+            await self.send_command_fail(command, "Cannot expand card of different power types")
+            return
+        
+        await database_sync_to_async(create_command)(player_id, card)
+        await self.game_model.use_expand(self.game, player_id, card)
+        
         await self.update_game()
         await self.group_send()
         await self.send_command_success(command)
         
     async def end_turn_action(self, text_data_json, player_id, command):
-        def create_end_turn_action_command(player_id):
+        def create_command(player_id):
             action_command = GOAEndTurnActionCommand.objects.create()
             GOAAction.objects.create(
                 action_set_id=self.record_action_set_id,
@@ -262,13 +395,9 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not action phase")
             return
         
-        await database_sync_to_async(create_end_turn_action_command)(player_id)
+        await database_sync_to_async(create_command)(player_id)
+        await self.game_model.end_turn(self.game)
         
-        self.game_model.next_turn()
-        # check game end
-        
-        players = await self.get_players()
-        await self.game_model.save_to_model(self.game, players)
         await self.update_game()
         await self.group_send()
         await self.send_command_success(command)

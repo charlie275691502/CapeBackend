@@ -15,6 +15,9 @@ class GOABoard(models.Model):
     player_ids = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     taking_turn_player_id = models.IntegerField(default=0)
     phase = models.IntegerField(default=0)
+    is_mask_used = models.BooleanField(default=False)
+    is_reform_used = models.BooleanField(default=False)
+    is_expand_used = models.BooleanField(default=False)
 
 class GOASetting(models.Model):
     pass
@@ -51,6 +54,20 @@ class GOAChooseRevealingBoardCardActionCommand(GOAActionCommand):
 
 class GOAChooseOpenBoardCardActionCommand(GOAActionCommand):
     position = models.IntegerField(default=0)
+    pass
+
+class GOAUseMaskActionCommand(GOAActionCommand):
+    card = models.IntegerField(default=0)
+    pass
+
+class GOAUseReformActionCommand(GOAActionCommand):
+    card = models.IntegerField(default=0)
+    target_card = models.IntegerField(default=0)
+    pass
+
+class GOAUseExpandActionCommand(GOAActionCommand):
+    card = models.IntegerField(default=0)
+    target_position = models.IntegerField(default=0)
     pass
 
 class GOAEndTurnActionCommand(GOAActionCommand):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand
 
 # Register your models here.
 
@@ -14,7 +14,10 @@ class GOABoardAdmin(admin.ModelAdmin):
                     'turn',
                     'player_ids',
                     'taking_turn_player_id',
-                    'phase']
+                    'phase',
+                    'is_mask_used',
+                    'is_reform_used',
+                    'is_expand_used']
 
 @admin.register(GOASetting)
 class GOASettingAdmin(admin.ModelAdmin):
@@ -59,6 +62,18 @@ class GOAChooseRevealingBoardCardActionCommandAdmin(admin.ModelAdmin):
 @admin.register(GOAChooseOpenBoardCardActionCommand)
 class GOAChooseOpenBoardCardActionCommandAdmin(admin.ModelAdmin):
     list_display = ['position']
+    
+@admin.register(GOAUseMaskActionCommand)
+class GOAUseMaskActionCommandAdmin(admin.ModelAdmin):
+    list_display = ['card']
+    
+@admin.register(GOAUseReformActionCommand)
+class GOAUseReformActionCommandAdmin(admin.ModelAdmin):
+    list_display = ['card', 'target_card']
+    
+@admin.register(GOAUseExpandActionCommand)
+class GOAUseExpandActionCommandAdmin(admin.ModelAdmin):
+    list_display = ['card', 'target_position']
 
 @admin.register(GOAEndTurnActionCommand)
 class GOAEndTurnActionCommandAdmin(admin.ModelAdmin):

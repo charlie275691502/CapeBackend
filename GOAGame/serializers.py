@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand
 from mainpage.serializers import PlayerSerializer
 
 class GOABoardSerializer(serializers.ModelSerializer):
@@ -40,7 +40,10 @@ class GOABoardRevealingSerializer(serializers.ModelSerializer):
                   'revealing_board_card_positions',
                   'turn',
                   'taking_turn_player_id',
-                  'phase']
+                  'phase',
+                  'is_mask_used',
+                  'is_reform_used',
+                  'is_expand_used']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
@@ -104,6 +107,21 @@ class GOAChooseOpenBoardCardActionCommandSerializer(serializers.ModelSerializer)
     class Meta:
         model = GOAChooseOpenBoardCardActionCommand
         fields = ['position']
+
+class GOAUseMaskCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAUseMaskActionCommand
+        fields = ['card']
+
+class GOAUseReformCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAUseReformActionCommand
+        fields = ['card', 'target_card']
+
+class GOAUseExpandCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAUseExpandActionCommand
+        fields = ['card', 'target_position']
 
 class GOAEndTurnActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
