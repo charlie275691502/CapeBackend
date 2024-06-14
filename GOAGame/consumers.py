@@ -354,7 +354,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Must choose open card")
             return
         
-        goa_target_card = game_data.cards.get_row(str(self.board_cards[target_position]))
+        goa_target_card = game_data.cards.get_row(str(self.game_model.board_cards[target_position]))
         
         if card not in self.game_model.player_public_cards[player_id]:
             await self.send_command_fail(command, f"card id {card} not found in your hand")
@@ -373,7 +373,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             return
         
         await database_sync_to_async(create_command)(player_id, card)
-        await self.game_model.use_expand(self.game, player_id, card)
+        await self.game_model.use_expand(self.game, player_id, card, target_position)
         
         await self.update_game()
         await self.group_send()
