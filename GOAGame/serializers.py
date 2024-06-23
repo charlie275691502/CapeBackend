@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAReleaseCardsActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
 from mainpage.serializers import PlayerSerializer
 
 class GOABoardSerializer(serializers.ModelSerializer):
@@ -43,7 +43,8 @@ class GOABoardRevealingSerializer(serializers.ModelSerializer):
                   'phase',
                   'is_mask_used',
                   'is_reform_used',
-                  'is_expand_used']
+                  'is_expand_used',
+                  'is_strategy_used']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
@@ -108,20 +109,30 @@ class GOAChooseOpenBoardCardActionCommandSerializer(serializers.ModelSerializer)
         model = GOAChooseOpenBoardCardActionCommand
         fields = ['position']
 
-class GOAUseMaskCommandSerializer(serializers.ModelSerializer):
+class GOAUseMaskActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = GOAUseMaskActionCommand
         fields = ['card']
 
-class GOAUseReformCommandSerializer(serializers.ModelSerializer):
+class GOAUseReformActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = GOAUseReformActionCommand
         fields = ['card', 'target_card']
 
-class GOAUseExpandCommandSerializer(serializers.ModelSerializer):
+class GOAUseExpandActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = GOAUseExpandActionCommand
         fields = ['card', 'target_position']
+
+class GOAReleaseCardsActionCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAReleaseCardsActionCommand
+        fields = ['cards']
+
+class GOAUseStrategyActionCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAUseStrategyActionCommand
+        fields = ['card', 'requirement_cards']
 
 class GOAEndTurnActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
@@ -149,8 +160,23 @@ class GOAActionSerializer(serializers.ModelSerializer):
 
         if action_command_type is GOARevealBoardCardsActionCommand:
             return GOARevealBoardCardsActionCommandSerializer(action.action_command).data
-        if action_command_type is GOAChooseBoardCardActionCommand:
-            return GOAChooseBoardCardActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAChooseRevealingBoardCardActionCommand:
+            return GOAChooseRevealingBoardCardActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAChooseOpenBoardCardActionCommand:
+            return GOAChooseOpenBoardCardActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAUseMaskActionCommand:
+            return GOAUseMaskActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAUseReformActionCommand:
+            return GOAUseReformActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAUseExpandActionCommand:
+            return GOAUseExpandActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAReleaseCardsActionCommand:
+            return GOAReleaseCardsActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAUseStrategyActionCommand:
+            return GOAUseStrategyActionCommandSerializer(action.action_command).data
+        if action_command_type is GOAEndTurnActionCommand:
+            return GOAEndTurnActionCommandSerializer(action.action_command).data
+        
         return GOAActionCommandSerializer(action.action_command).data
 
 class GOASummarySerializer(serializers.ModelSerializer):

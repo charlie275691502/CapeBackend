@@ -9,6 +9,7 @@ class GameModel:
     def __init__(self,
                  draw_cards,
                  grave_cards,
+                 strategy_cards,
                  board_cards_slot,
                  board_cards,
                  open_board_card_positions,
@@ -24,10 +25,12 @@ class GameModel:
                  phase,
                  is_mask_used,
                  is_reform_used,
-                 is_expand_used):
+                 is_expand_used,
+                 is_strategy_used):
         
         self.draw_cards = draw_cards
         self.grave_cards = grave_cards
+        self.strategy_cards = strategy_cards
         self.board_cards_slot = board_cards_slot
         self.board_cards = board_cards
         self.open_board_card_positions = open_board_card_positions
@@ -44,13 +47,15 @@ class GameModel:
         self.is_mask_used = is_mask_used
         self.is_reform_used = is_reform_used
         self.is_expand_used = is_expand_used
+        self.is_strategy_used = is_strategy_used
         pass
 
     @classmethod
-    def init(cls, public_card_count: int, player_ids: list[int]):
+    def init(cls, player_ids: list[int]):
         random.shuffle(player_ids)
-        model = cls([card for card in range(1, public_card_count + 1)],
+        model = cls([id for (id, card) in game_data.cards.rows.items() if card.is_public_card()],
                     [],
+                    [id for (id, card) in game_data.cards.rows.items() if card.card_type == CardType.Strategy],
                     len(player_ids) * 3,
                     [-1 for i in range(len(player_ids) * 3)],
                     [],
@@ -66,6 +71,7 @@ class GameModel:
                     1,
                     False,
                     False,
+                    False,
                     False)
         model.refill_board_cards()
         return model
@@ -75,6 +81,7 @@ class GameModel:
     def from_model(cls, game: GOAGame):
         return cls(game.board.draw_cards,
                    game.board.grave_cards,
+                   game.board.strategy_cards,
                    len(game.board.player_ids),
                    game.board.board_cards,
                    game.board.open_board_card_positions,
@@ -90,11 +97,13 @@ class GameModel:
                    game.board.phase,
                    game.board.is_mask_used,
                    game.board.is_reform_used,
-                   game.board.is_expand_used)
+                   game.board.is_expand_used,
+                   game.board.is_strategy_used)
         
     async def save_to_model(self, game: GOAGame):
         game.board.draw_cards = self.draw_cards
         game.board.grave_cards =  self.grave_cards
+        game.board.strategy_cards =  self.strategy_cards
         game.board.board_cards = self.board_cards
         game.board.open_board_card_positions = self.open_board_card_positions
         game.board.revealing_player_id = self.revealing_player_id
@@ -105,6 +114,7 @@ class GameModel:
         game.board.is_mask_used = self.is_mask_used
         game.board.is_reform_used = self.is_reform_used
         game.board.is_expand_used = self.is_expand_used
+        game.board.is_strategy_used = self.is_strategy_used
         await self.save_board(game.board)
         
         players = await self.get_players(game)
@@ -151,7 +161,7 @@ class GameModel:
         self.draw_cards.remove(card)
         return card
     
-    def draw_card_to_hand(self, player_id: int):
+    def draw_one_public_card_to_hand(self, player_id: int):
         self.player_public_cards[player_id].append(self.draw_one_public_card())
     
     def take_open_card_to_hand(self, player_id: int, position):
@@ -159,13 +169,28 @@ class GameModel:
         self.board_cards[position] = -1
         self.open_board_card_positions.remove(position)
     
-    def remove_card(self, player_id: int, card: int) -> int:
+    def remove_hand_public_card(self, player_id: int, card: int) -> int:
         self.player_public_cards[player_id].remove(card)
         self.grave_cards.append(card)
     
-    def remove_cards(self, player_id: int, cards: list[int]) -> int:
+    def remove_hand_public_cards(self, player_id: int, cards: list[int]) -> int:
         for card in cards:
-            self.remove_cards(player_id, card)
+            self.remove_hand_public_cards(player_id, card)
+    
+    def draw_one_strategy_card(self) -> int:
+        if (len(self.strategy_cards) == 0) :
+            return None
+        card = random.choice(self.strategy_cards)
+        self.strategy_cards.remove(card)
+        return card
+    
+    def draw_one_strategy_card_to_hand(self, player_id: int):
+        strategy_card = self.draw_one_strategy_card()
+        if strategy_card != None :
+            self.player_strategy_cards[player_id].append(strategy_card)
+    
+    def remove_hand_strategy_card(self, player_id: int, card: int) -> int:
+        self.player_strategy_cards[player_id].remove(card)
         
     def update_power(self, player_id: int):
         goa_cards = [game_data.cards.get_row(str(card)) for card in self.player_public_cards[player_id]]
@@ -200,30 +225,47 @@ class GameModel:
         await self.save_to_model(game)
         
     async def use_mask(self, game: GOAGame, player_id: int, card: int):
-        self.remove_card(player_id, card)
-        self.draw_card_to_hand(player_id)
+        self.remove_hand_public_card(player_id, card)
+        self.draw_one_public_card_to_hand(player_id)
         self.update_power(player_id)
         self.is_mask_used = True
         await self.save_to_model(game)
         
     async def use_reform(self, game: GOAGame, player_id: int, card: int, target_card: int):
-        self.remove_card(player_id, card)
-        self.remove_card(player_id, target_card)
+        self.remove_hand_public_card(player_id, card)
+        self.remove_hand_public_card(player_id, target_card)
         self.update_power(player_id)
         self.is_reform_used = True
         await self.save_to_model(game)
         
     async def use_expand(self, game: GOAGame, player_id: int, card: int, target_position: int):
-        self.remove_card(player_id, card)
+        self.remove_hand_public_card(player_id, card)
         self.take_open_card_to_hand(player_id, target_position)
         self.update_power(player_id)
         self.is_expand_used = True
         await self.save_to_model(game)
         
-    async def end_turn(self, game: GOAGame):
-        # check game end
+    async def release_cards(self, game: GOAGame, player_id: int, cards: list[int]):
+        for card in cards :
+            self.remove_hand_public_card(player_id, card)
+        self.draw_one_strategy_card_to_hand(player_id)
+        self.update_power(player_id)
+        await self.save_to_model(game)
         
-        # check if refill cards
+    async def use_strategy(self, game: GOAGame, player_id: int, card: int, requirement_cards: list[int]):
+        self.remove_hand_strategy_card(player_id, card)
+        for requirement_card in requirement_cards :
+            self.remove_hand_public_card(player_id, requirement_card)
+        self.update_power(player_id)
+        await self.save_to_model(game)
+        
+    async def end_turn(self, game: GOAGame):
+        if len([card for card in self.board_cards if card != -1]) <= len(self.player_ids) :
+            self.refill_board_cards()
+        
+        if self.player_powers[self.taking_turn_player_id] > self.player_power_limits[self.taking_turn_player_id] :
+            # loss
+            pass
         
         index = self.player_ids.index(self.taking_turn_player_id)
         self.taking_turn_player_id = self.player_ids[(index + 1) % len(self.player_ids)]

@@ -7,6 +7,7 @@ from mainpage.models import Player
 class GOABoard(models.Model):
     draw_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
     grave_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
+    strategy_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
     board_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
     open_board_card_positions = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     revealing_player_id = models.IntegerField(default=0)
@@ -18,6 +19,7 @@ class GOABoard(models.Model):
     is_mask_used = models.BooleanField(default=False)
     is_reform_used = models.BooleanField(default=False)
     is_expand_used = models.BooleanField(default=False)
+    is_strategy_used = models.BooleanField(default=False)
 
 class GOASetting(models.Model):
     pass
@@ -68,6 +70,15 @@ class GOAUseReformActionCommand(GOAActionCommand):
 class GOAUseExpandActionCommand(GOAActionCommand):
     card = models.IntegerField(default=0)
     target_position = models.IntegerField(default=0)
+    pass
+
+class GOAReleaseCardsActionCommand(GOAActionCommand):
+    cards = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
+    pass
+
+class GOAUseStrategyActionCommand(GOAActionCommand):
+    card = models.IntegerField(default=0)
+    requirement_cards = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     pass
 
 class GOAEndTurnActionCommand(GOAActionCommand):

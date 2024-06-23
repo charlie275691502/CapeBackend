@@ -189,7 +189,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         players = room.players.all()
         
         game_model = GameModel.init(
-            game_data.constatns.get_row("PublicCardCount").value,
             [player.user.id for player in players]
         )
         
@@ -197,6 +196,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             draw_cards=game_model.draw_cards,
             grave_cards=game_model.grave_cards,
             board_cards=game_model.board_cards,
+            strategy_cards=game_model.strategy_cards,
             open_board_card_positions=game_model.open_board_card_positions,
             revealing_player_id=game_model.revealing_player_id,
             revealing_board_card_positions=game_model.revealing_board_card_positions,
@@ -209,6 +209,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             draw_cards=game_model.draw_cards,
             grave_cards=game_model.grave_cards,
             board_cards=game_model.board_cards,
+            strategy_cards=game_model.strategy_cards,
             open_board_card_positions=game_model.open_board_card_positions,
             revealing_player_id=game_model.revealing_player_id,
             revealing_board_card_positions=game_model.revealing_board_card_positions,

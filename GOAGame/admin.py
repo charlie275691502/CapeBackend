@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAReleaseCardsActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
 
 # Register your models here.
 
@@ -7,6 +7,7 @@ from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseReve
 class GOABoardAdmin(admin.ModelAdmin):
     list_display = ['draw_cards',
                     'grave_cards',
+                    'strategy_cards',
                     'board_cards',
                     'open_board_card_positions',
                     'revealing_player_id',
@@ -17,7 +18,8 @@ class GOABoardAdmin(admin.ModelAdmin):
                     'phase',
                     'is_mask_used',
                     'is_reform_used',
-                    'is_expand_used']
+                    'is_expand_used',
+                    'is_strategy_used']
 
 @admin.register(GOASetting)
 class GOASettingAdmin(admin.ModelAdmin):
@@ -74,6 +76,14 @@ class GOAUseReformActionCommandAdmin(admin.ModelAdmin):
 @admin.register(GOAUseExpandActionCommand)
 class GOAUseExpandActionCommandAdmin(admin.ModelAdmin):
     list_display = ['card', 'target_position']
+    
+@admin.register(GOAReleaseCardsActionCommand)
+class GOAReleaseCardsActionCommandAdmin(admin.ModelAdmin):
+    list_display = ['cards']
+    
+@admin.register(GOAUseStrategyActionCommand)
+class GOAUseStrategyActionCommandAdmin(admin.ModelAdmin):
+    list_display = ['card', 'requirement_cards']
 
 @admin.register(GOAEndTurnActionCommand)
 class GOAEndTurnActionCommandAdmin(admin.ModelAdmin):

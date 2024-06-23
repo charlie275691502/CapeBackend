@@ -11,10 +11,11 @@ class DataLoader:
         return self.rows[id]
 
 class PowerType(Enum):
-    Wealth = 0
-    Industry = 1
-    SeaPower = 2
-    Military = 3
+    Empty = 0
+    Wealth = 1
+    Industry = 2
+    SeaPower = 3
+    Military = 4
     
 class CardType(Enum):
     Power = 0
@@ -23,6 +24,14 @@ class CardType(Enum):
     ActionExpand = 3
     Strategy = 4
     
+class GOACardTypePowerPair:
+    def __init__(self, power_type: PowerType, power: int):
+        self.power_type = power_type
+        self.power = power
+        
+    def get_order(self):
+        return self.power_type.value * 1000 + self.power
+    
 class GOACard:
     def __init__(self, row):
         self.id = str(row["Id"])
@@ -30,8 +39,18 @@ class GOACard:
         self.power = row["Power"]
         self.card_type = CardType[row["CardType"]]
         
+        self.requirements = []
+        if PowerType[row["RequirementPowerType1"]] != PowerType.Empty :
+            self.requirements.append(GOACardTypePowerPair(PowerType[row["RequirementPowerType1"]], row["RequirementPower1"]))
+        if PowerType[row["RequirementPowerType2"]] != PowerType.Empty :
+            self.requirements.append(GOACardTypePowerPair(PowerType[row["RequirementPowerType2"]], row["RequirementPower2"]))
+        self.requirements.sort(key=lambda pair: pair.get_order())
+        
     def is_action_card(self) -> bool:
         return self.card_type == CardType.ActionMask or self.card_type == CardType.ActionReform or self.card_type == CardType.ActionExpand
+    
+    def is_public_card(self) -> bool:
+        return self.card_type == CardType.Power or self.is_action_card()
         
 class Constant:
     def __init__(self, row):
