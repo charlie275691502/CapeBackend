@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAReleaseCardsActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndCongressActionCommand, GOAEndTurnActionCommand, GOAReleaseCardsActionCommand, GOASetting, GOAPlayerSet, GOAPlayer, GOAActionSet, GOAAction, GOARecord, GOAGame, GOAActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
 
 # Register your models here.
 
@@ -15,11 +15,8 @@ class GOABoardAdmin(admin.ModelAdmin):
                     'turn',
                     'player_ids',
                     'taking_turn_player_id',
-                    'phase',
-                    'is_mask_used',
-                    'is_reform_used',
-                    'is_expand_used',
-                    'is_strategy_used']
+                    'chair_person_player_id',
+                    'phase']
 
 @admin.register(GOASetting)
 class GOASettingAdmin(admin.ModelAdmin):
@@ -41,6 +38,11 @@ class GOAPlayerAdmin(admin.ModelAdmin):
                     'strategy_cards',
                     'power',
                     'power_limit',
+                    'is_mask_used',
+                    'is_reform_used',
+                    'is_expand_used',
+                    'is_strategy_used',
+                    'is_end_congress',
                     'player',
                     'elo', 
                     'played_game_count',
@@ -87,6 +89,10 @@ class GOAUseStrategyActionCommandAdmin(admin.ModelAdmin):
 
 @admin.register(GOAEndTurnActionCommand)
 class GOAEndTurnActionCommandAdmin(admin.ModelAdmin):
+    list_display = []
+    
+@admin.register(GOAEndCongressActionCommand)
+class GOAEndCongressActionCommandAdmin(admin.ModelAdmin):
     list_display = []
 
 @admin.register(GOAAction)

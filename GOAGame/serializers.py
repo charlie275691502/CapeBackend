@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAReleaseCardsActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
+from .models import GOABoard, GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndCongressActionCommand, GOAEndTurnActionCommand, GOAReleaseCardsActionCommand, GOASetting, GOAPlayer, GOAAction, GOAActionCommand, GOARevealBoardCardsActionCommand, GOARecord, GOAGame, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
 from mainpage.serializers import PlayerSerializer
 
 class GOABoardSerializer(serializers.ModelSerializer):
@@ -40,11 +40,8 @@ class GOABoardRevealingSerializer(serializers.ModelSerializer):
                   'revealing_board_card_positions',
                   'turn',
                   'taking_turn_player_id',
-                  'phase',
-                  'is_mask_used',
-                  'is_reform_used',
-                  'is_expand_used',
-                  'is_strategy_used']
+                  'chair_person_player_id',
+                  'phase']
         
     def get_draw_card_count(self, board: GOABoard):
         return len(board.draw_cards)
@@ -77,6 +74,11 @@ class GOAPlayerSerializer(serializers.ModelSerializer):
                   'strategy_card_count',
                   'power',
                   'power_limit',
+                  'is_mask_used',
+                  'is_reform_used',
+                  'is_expand_used',
+                  'is_strategy_used',
+                  'is_end_congress',
                   'player',
                   'elo',
                   'played_game_count',
@@ -137,7 +139,12 @@ class GOAUseStrategyActionCommandSerializer(serializers.ModelSerializer):
 class GOAEndTurnActionCommandSerializer(serializers.ModelSerializer):
     class Meta:
         model = GOAEndTurnActionCommand
-        fields = ['position']
+        fields = []
+        
+class GOAEndCongressActionCommandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GOAEndCongressActionCommand
+        fields = []
 
 class GOAActionSerializer(serializers.ModelSerializer):
     player_id = serializers.SerializerMethodField(method_name='get_player_id')

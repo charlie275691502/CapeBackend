@@ -15,11 +15,8 @@ class GOABoard(models.Model):
     turn = models.IntegerField(default=1)
     player_ids = ArrayField(models.PositiveSmallIntegerField(default=0), null=True, blank=True)
     taking_turn_player_id = models.IntegerField(default=0)
+    chair_person_player_id = models.IntegerField(default=0)
     phase = models.IntegerField(default=0)
-    is_mask_used = models.BooleanField(default=False)
-    is_reform_used = models.BooleanField(default=False)
-    is_expand_used = models.BooleanField(default=False)
-    is_strategy_used = models.BooleanField(default=False)
 
 class GOASetting(models.Model):
     pass
@@ -35,6 +32,11 @@ class GOAPlayer(models.Model):
     strategy_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
     power = models.IntegerField(default=0)
     power_limit = models.IntegerField(default=0)
+    is_mask_used = models.BooleanField(default=False)
+    is_reform_used = models.BooleanField(default=False)
+    is_expand_used = models.BooleanField(default=False)
+    is_strategy_used = models.BooleanField(default=False)
+    is_end_congress = models.BooleanField(default=False)
     
     player = models.ForeignKey(Player, null=True, blank=True, on_delete=models.SET_NULL)
     elo = models.IntegerField(default=0)
@@ -82,6 +84,9 @@ class GOAUseStrategyActionCommand(GOAActionCommand):
     pass
 
 class GOAEndTurnActionCommand(GOAActionCommand):
+    pass
+
+class GOAEndCongressActionCommand(GOAActionCommand):
     pass
 
 class GOAActionSet(models.Model):

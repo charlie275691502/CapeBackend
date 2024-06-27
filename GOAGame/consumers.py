@@ -4,7 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from Common.DataLoader import CardType, GOACardTypePowerPair
 from Common.GameModel import GameModel
 from core.management.commands.load_game_data import game_data
-from .models import GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndTurnActionCommand, GOAGame, GOAAction, GOAPlayer, GOARecord, GOAReleaseCardsActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
+from .models import GOAChooseOpenBoardCardActionCommand, GOAChooseRevealingBoardCardActionCommand, GOAEndCongressActionCommand, GOAEndTurnActionCommand, GOAGame, GOAAction, GOAPlayer, GOARecord, GOAReleaseCardsActionCommand, GOARevealBoardCardsActionCommand, GOASummary, GOAUseExpandActionCommand, GOAUseMaskActionCommand, GOAUseReformActionCommand, GOAUseStrategyActionCommand
 from .serializers import GOAActionSerializer, GOAGameBoardRevealingSerializer, GOAGameSerializer, GOASummarySerializer
 
 class GOAGameConsumer(AsyncWebsocketConsumer):
@@ -65,6 +65,8 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
                 await self.use_strategy_action(text_data_json, player_id, command)
             case "end_turn_action":
                 await self.end_turn_action(text_data_json, player_id, command)
+            case "end_congress_action":
+                await self.end_congress_action(text_data_json, player_id, command)
     
     async def send_command_success(self, command):
         await self.send(text_data=json.dumps({"command": f"{command}_success", "data": ""}))
@@ -256,7 +258,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not action phase")
             return
             
-        if self.game_model.is_mask_used :
+        if self.game_model.is_player_mask_used[player_id] :
             await self.send_command_fail(command, "Mask has been used in this turn")
             return
         
@@ -294,7 +296,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not action phase")
             return
             
-        if self.game_model.is_reform_used :
+        if self.game_model.is_player_reform_used[player_id] :
             await self.send_command_fail(command, "Reform has been used in this turn")
             return
         
@@ -323,7 +325,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Cannot reform card of different power types")
             return
         
-        await database_sync_to_async(create_command)(player_id, card)
+        await database_sync_to_async(create_command)(player_id, card, target_card)
         await self.game_model.use_reform(self.game, player_id, card, target_card)
         
         await self.update_game()
@@ -346,7 +348,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not action phase")
             return
             
-        if self.game_model.is_expand_used :
+        if self.game_model.is_player_expand_used[player_id] :
             await self.send_command_fail(command, "Expand has been used in this turn")
             return
         
@@ -376,7 +378,7 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Cannot expand card of different power types")
             return
         
-        await database_sync_to_async(create_command)(player_id, card)
+        await database_sync_to_async(create_command)(player_id, card, target_position)
         await self.game_model.use_expand(self.game, player_id, card, target_position)
         
         await self.update_game()
@@ -442,11 +444,11 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             await self.send_command_fail(command, "Not your turn")
             return
             
-        if self.game_model.phase != GameModel.ACTION_PHASE:
-            await self.send_command_fail(command, "Not action phase")
+        if self.game_model.phase != GameModel.ACTION_PHASE and self.game_model.phase != GameModel.CONGRESS_PHASE :
+            await self.send_command_fail(command, "Not action and congress phase")
             return
             
-        if self.game_model.is_strategy_used :
+        if self.game_model.is_player_strategy_used[player_id] :
             await self.send_command_fail(command, "Strategy card has been used in this turn")
             return
         
@@ -501,7 +503,30 @@ class GOAGameConsumer(AsyncWebsocketConsumer):
             return
         
         await database_sync_to_async(create_command)(player_id)
-        await self.game_model.end_turn(self.game)
+        await self.game_model.end_turn(self.game, player_id)
+        
+        await self.update_game()
+        await self.group_send()
+        await self.send_command_success(command)
+        
+    async def end_congress_action(self, text_data_json, player_id, command):
+        def create_command(player_id):
+            action_command = GOAEndCongressActionCommand.objects.create()
+            GOAAction.objects.create(
+                action_set_id=self.record_action_set_id,
+                player_id=player_id,
+                action_command=action_command)
+            
+        if self.game_model.is_player_end_congress[player_id] == True:
+            await self.send_command_fail(command, "Already end congress")
+            return
+            
+        if self.game_model.phase != GameModel.CONGRESS_PHASE:
+            await self.send_command_fail(command, "Not congress phase")
+            return
+        
+        await database_sync_to_async(create_command)(player_id)
+        await self.game_model.end_congress(self.game, player_id)
         
         await self.update_game()
         await self.group_send()
