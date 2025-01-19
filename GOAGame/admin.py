@@ -16,7 +16,8 @@ class GOABoardAdmin(admin.ModelAdmin):
                     'player_ids',
                     'taking_turn_player_id',
                     'chair_person_player_id',
-                    'phase']
+                    'phase',
+                    'is_last_turn']
 
 @admin.register(GOASetting)
 class GOASettingAdmin(admin.ModelAdmin):
@@ -38,6 +39,7 @@ class GOAPlayerAdmin(admin.ModelAdmin):
                     'strategy_cards',
                     'power',
                     'power_limit',
+                    'is_dead',
                     'is_mask_used',
                     'is_reform_used',
                     'is_expand_used',

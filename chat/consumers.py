@@ -203,7 +203,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             turn=game_model.turn,
             player_ids=game_model.player_ids,
             taking_turn_player_id=game_model.taking_turn_player_id,
-            phase=game_model.phase)
+            chair_person_player_id=game_model.chair_person_player_id,
+            phase=game_model.phase,
+            is_last_turn=game_model.is_last_turn)
         
         init_board = GOABoard.objects.create(
             draw_cards=game_model.draw_cards,
@@ -216,7 +218,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             turn=game_model.turn,
             player_ids=game_model.player_ids,
             taking_turn_player_id=game_model.taking_turn_player_id,
-            phase=game_model.phase)
+            chair_person_player_id=game_model.chair_person_player_id,
+            phase=game_model.phase,
+            is_last_turn=game_model.is_last_turn)
         
         action_set = GOAActionSet.objects.create()
         player_set = GOAPlayerSet.objects.create()

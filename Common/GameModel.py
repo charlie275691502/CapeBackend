@@ -19,6 +19,7 @@ class GameModel:
                  player_strategy_cards,
                  player_powers,
                  player_power_limits,
+                 is_player_dead,
                  player_ids,
                  taking_turn_player_id,
                  chair_person_player_id,
@@ -28,7 +29,8 @@ class GameModel:
                  is_player_reform_used,
                  is_player_expand_used,
                  is_player_strategy_used,
-                 is_player_end_congress):
+                 is_player_end_congress,
+                 is_last_turn):
         
         self.draw_cards = draw_cards
         self.grave_cards = grave_cards
@@ -42,6 +44,7 @@ class GameModel:
         self.player_strategy_cards = player_strategy_cards
         self.player_powers = player_powers
         self.player_power_limits = player_power_limits
+        self.is_player_dead = is_player_dead
         self.player_ids = player_ids
         self.taking_turn_player_id = taking_turn_player_id
         self.chair_person_player_id = chair_person_player_id
@@ -52,6 +55,7 @@ class GameModel:
         self.is_player_expand_used = is_player_expand_used
         self.is_player_strategy_used = is_player_strategy_used
         self.is_player_end_congress = is_player_end_congress
+        self.is_last_turn = is_last_turn
         pass
 
     @classmethod
@@ -69,6 +73,7 @@ class GameModel:
                     {player_id: [] for player_id in player_ids},
                     {player_id: 0 for player_id in player_ids},
                     {player_id: 35 for player_id in player_ids},
+                    {player_id: False for player_id in player_ids},
                     player_ids,
                     player_ids[0],
                     player_ids[0],
@@ -78,7 +83,8 @@ class GameModel:
                     {player_id: False for player_id in player_ids},
                     {player_id: False for player_id in player_ids},
                     {player_id: False for player_id in player_ids},
-                    {player_id: False for player_id in player_ids})
+                    {player_id: False for player_id in player_ids},
+                    False)
         model.refill_board_cards()
         return model
         
@@ -97,6 +103,7 @@ class GameModel:
                    {player.player.user.id: player.strategy_cards for player in game.player_set.players.all()},
                    {player.player.user.id: player.power for player in game.player_set.players.all()},
                    {player.player.user.id: player.power_limit for player in game.player_set.players.all()},
+                   {player.player.user.id: player.is_dead for player in game.player_set.players.all()},
                    game.board.player_ids,
                    game.board.taking_turn_player_id,
                    game.board.chair_person_player_id,
@@ -106,7 +113,8 @@ class GameModel:
                    {player.player.user.id: player.is_reform_used for player in game.player_set.players.all()},
                    {player.player.user.id: player.is_expand_used for player in game.player_set.players.all()},
                    {player.player.user.id: player.is_strategy_used for player in game.player_set.players.all()},
-                   {player.player.user.id: player.is_end_congress for player in game.player_set.players.all()})
+                   {player.player.user.id: player.is_end_congress for player in game.player_set.players.all()},
+                   game.board.is_last_turn)
         
     async def save_to_model(self, game: GOAGame):
         game.board.draw_cards = self.draw_cards
@@ -120,6 +128,7 @@ class GameModel:
         game.board.chair_person_player_id = self.chair_person_player_id
         game.board.turn = self.turn
         game.board.phase = self.phase
+        game.board.is_last_turn = self.is_last_turn
         await self.save_board(game.board)
         
         players = await self.get_players(game)
@@ -129,6 +138,7 @@ class GameModel:
             player.strategy_cards = self.player_strategy_cards[player_id]
             player.power = self.player_powers[player_id]
             player.power_limit = self.player_power_limits[player_id]
+            player.is_dead = self.is_player_dead[player_id]
             player.is_mask_used = self.is_player_mask_used[player_id]
             player.is_reform_used = self.is_player_reform_used[player_id]
             player.is_expand_used = self.is_player_expand_used[player_id]
@@ -154,6 +164,7 @@ class GameModel:
     CHOOSE_BOARD_CARD_PHASE = 1
     ACTION_PHASE = 2
     CONGRESS_PHASE = 3
+    SUMMARY_PHASE = 4
         
     def refill_board_cards(self):
         for i in range(len(self.board_cards)) :
@@ -212,6 +223,9 @@ class GameModel:
             mask_count = len([goa_card for goa_card in goa_cards if goa_card.card_type == CardType.ActionMask and goa_card.power_type == power_type])
             power += sum([goa_card.power for goa_card in power_cards[mask_count:] + action_cards])
         self.player_powers[player_id] = power
+        
+    def is_dead(self, player_id: int) -> bool:
+        return self.player_powers[player_id] > self.player_power_limits[player_id]
     
 # action from consumer
     async def reveal_board_cards(self, game: GOAGame, player_id: int, positions: list[int]):
@@ -272,15 +286,15 @@ class GameModel:
         await self.save_to_model(game)
         
     async def end_turn(self, game: GOAGame, player_id: int):
-        if self.player_powers[player_id] > self.player_power_limits[player_id] :
-            # lose
-            pass
+        if self.is_dead(player_id) :
+            self.is_player_dead[player_id] = True
+            self.is_last_turn = True
         
         if len([card for card in self.board_cards if card != -1]) <= len(self.player_ids) :
             self.refill_board_cards()
             self.turn += 1
             
-            if self.turn >= 4 and self.turn % 2 == 1 :
+            if not self.is_last_turn and self.turn >= 4 and self.turn % 2 == 1:
                 self.phase = GameModel.CONGRESS_PHASE
                 self.is_player_mask_used[player_id] = False
                 self.is_player_reform_used[player_id] = False
@@ -293,13 +307,13 @@ class GameModel:
                 await self.save_to_model(game)
                 return
         
-        index = self.player_ids.index(player_id)
-        self.taking_turn_player_id = self.player_ids[(index + 1) % len(self.player_ids)]
-        self.phase = GameModel.CHOOSE_BOARD_CARD_PHASE
         self.is_player_mask_used[player_id] = False
         self.is_player_reform_used[player_id] = False
         self.is_player_expand_used[player_id] = False
         self.is_player_strategy_used[player_id] = False
+        self.taking_turn_player_id = self.player_ids[(self.player_ids.index(player_id) + 1) % len(self.player_ids)]
+        self.phase = GameModel.SUMMARY_PHASE if self.is_player_dead[self.taking_turn_player_id] else GameModel.CHOOSE_BOARD_CARD_PHASE
+        
         await self.save_to_model(game)
         
     async def end_congress(self, game: GOAGame, player_id: int):

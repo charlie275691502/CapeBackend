@@ -17,6 +17,7 @@ class GOABoard(models.Model):
     taking_turn_player_id = models.IntegerField(default=0)
     chair_person_player_id = models.IntegerField(default=0)
     phase = models.IntegerField(default=0)
+    is_last_turn = models.BooleanField(default=0)
 
 class GOASetting(models.Model):
     pass
@@ -32,6 +33,7 @@ class GOAPlayer(models.Model):
     strategy_cards = ArrayField(models.PositiveSmallIntegerField(default=-1), null=True, blank=True)
     power = models.IntegerField(default=0)
     power_limit = models.IntegerField(default=0)
+    is_dead = models.BooleanField(default=False)
     is_mask_used = models.BooleanField(default=False)
     is_reform_used = models.BooleanField(default=False)
     is_expand_used = models.BooleanField(default=False)
